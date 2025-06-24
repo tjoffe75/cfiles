@@ -1,0 +1,40 @@
+# Node.js och React-relaterade filer
+node_modules/
+build/
+dist/
+
+# Python-relaterade filer
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+
+# Loggfiler
+*.log
+
+# Systemfiler
+.DS_Store
+Thumbs.db
+
+# IDE-specifika filer
+.vscode/
+.idea/
+
+# Docker-relaterade filer
+docker-compose.override.yml
+
+# Miljövariabler
+.env
+.env.local
+.env.*.local
+
+# Test- och täckningsrapporter
+coverage/
+*.lcov
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
