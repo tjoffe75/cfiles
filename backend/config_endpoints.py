@@ -9,14 +9,42 @@ app = FastAPI()
 
 # In-memory configuration storage for demonstration purposes
 configurations = {
-    "maintenance_mode": False,
-    "maintenance_message": "",
-    "rbac_sso_enabled": False,
-    "sso_config": {},
+    "maintenance": {
+        "maintenance_mode": False,
+        "maintenance_message": ""
+    },
+    "sso": {
+        "rbac_sso_enabled": False,
+        "sso_config": {
+            "ad_endpoint": "",
+            "client_id": "",
+            "client_secret": "",
+            "user_group": "",
+            "admin_group": ""
+        }
+    },
     "https_enabled": False,
     "https_cert": "",
     "company_logo": ""
 }
+
+# Ensure required keys exist in configurations dictionary
+configurations.update({
+    "maintenance": {
+        "maintenance_mode": False,
+        "maintenance_message": ""
+    },
+    "sso": {
+        "rbac_sso_enabled": False,
+        "sso_config": {
+            "ad_endpoint": "",
+            "client_id": "",
+            "client_secret": "",
+            "user_group": "",
+            "admin_group": ""
+        }
+    }
+})
 
 @app.get("/config")
 def get_config():
@@ -55,32 +83,60 @@ def get_logs():
 @app.get("/maintenance")
 def get_maintenance_status():
     return {
-        "maintenance_mode": configurations["maintenance_mode"],
-        "maintenance_message": configurations["maintenance_message"]
+        "maintenance_mode": configurations["maintenance"]["maintenance_mode"],
+        "maintenance_message": configurations["maintenance"]["maintenance_message"]
     }
 
 @app.put("/maintenance")
 def update_maintenance_status(status: dict):
     if "maintenance_mode" not in status or "maintenance_message" not in status:
         raise HTTPException(status_code=422, detail="Missing keys in request body")
-    configurations["maintenance_mode"] = status["maintenance_mode"]
-    configurations["maintenance_message"] = status["maintenance_message"]
+    configurations["maintenance"]["maintenance_mode"] = status["maintenance_mode"]
+    configurations["maintenance"]["maintenance_message"] = status["maintenance_message"]
     return {"message": "Maintenance status updated successfully"}
+
+@app.put("/config/maintenance")
+def toggle_maintenance_mode(mode: dict):
+    if "maintenance_mode" not in mode or "maintenance_message" not in mode:
+        raise HTTPException(status_code=422, detail="Missing 'maintenance_mode' or 'maintenance_message' in request body")
+    configurations["maintenance"] = {
+        "maintenance_mode": mode["maintenance_mode"],
+        "maintenance_message": mode["maintenance_message"]
+    }
+    return {
+        "message": "Configuration updated successfully",
+        "maintenance_mode": configurations["maintenance"]["maintenance_mode"],
+        "maintenance_message": configurations["maintenance"]["maintenance_message"]
+    }
 
 @app.get("/sso")
 def get_sso_config():
     return {
-        "rbac_sso_enabled": configurations["rbac_sso_enabled"],
-        "sso_config": configurations["sso_config"]
+        "rbac_sso_enabled": configurations["sso"]["rbac_sso_enabled"],
+        "sso_config": configurations["sso"]["sso_config"]
     }
 
 @app.put("/sso")
 def update_sso_config(config: dict):
     if "rbac_sso_enabled" not in config or "sso_config" not in config:
         raise HTTPException(status_code=422, detail="Missing keys in request body")
-    configurations["rbac_sso_enabled"] = config["rbac_sso_enabled"]
-    configurations["sso_config"] = config["sso_config"]
+    configurations["sso"]["rbac_sso_enabled"] = config["rbac_sso_enabled"]
+    configurations["sso"]["sso_config"] = config["sso_config"]
     return {"message": "SSO configuration updated successfully"}
+
+@app.put("/config/sso")
+def configure_sso_rbac(config: dict):
+    if "rbac_sso_enabled" not in config or "sso_config" not in config:
+        raise HTTPException(status_code=422, detail="Missing 'rbac_sso_enabled' or 'sso_config' in request body")
+    configurations["sso"] = {
+        "rbac_sso_enabled": config["rbac_sso_enabled"],
+        "sso_config": config["sso_config"]
+    }
+    return {
+        "message": "Configuration updated successfully",
+        "rbac_sso_enabled": configurations["sso"]["rbac_sso_enabled"],
+        "sso_config": configurations["sso"]["sso_config"]
+    }
 
 @app.get("/https")
 def get_https_config():
