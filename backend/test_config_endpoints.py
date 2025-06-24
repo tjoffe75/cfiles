@@ -8,13 +8,20 @@ client = TestClient(app)
 def test_get_config():
     response = client.get("/config")
     assert response.status_code == 200
-    assert "maintenance_mode" in response.json()
+    assert "maintenance" in response.json()
+    assert "maintenance_mode" in response.json()["maintenance"]
 
 # Test for updating configurations
 def test_update_config():
-    response = client.put("/config/maintenance_mode", json={"value": True})
+    response = client.put("/config/maintenance", json={
+        "maintenance_mode": True,
+        "maintenance_message": "Updated maintenance message."
+    })
     assert response.status_code == 200
     assert response.json()["message"] == "Configuration updated successfully"
+    assert response.json()["key"] == "maintenance"
+    assert response.json()["value"]["maintenance_mode"] is True
+    assert response.json()["value"]["maintenance_message"] == "Updated maintenance message."
 
 # Test for uploading logo
 def test_upload_logo():
@@ -96,3 +103,33 @@ def test_get_realtime_logs():
     response = client.get("/logs/realtime")
     assert response.status_code == 200
     assert "logs" in response.json()
+
+# Test for toggling maintenance mode
+def test_toggle_maintenance_mode():
+    response = client.put("/config/maintenance", json={
+        "maintenance_mode": True,
+        "maintenance_message": "Scheduled maintenance ongoing."
+    })
+    assert response.status_code == 200
+    assert response.json()["message"] == "Configuration updated successfully"
+    assert response.json()["key"] == "maintenance"
+    assert response.json()["value"]["maintenance_mode"] is True
+    assert response.json()["value"]["maintenance_message"] == "Scheduled maintenance ongoing."
+
+# Test for configuring SSO/RBAC
+def test_configure_sso_rbac():
+    response = client.put("/config/sso", json={
+        "rbac_sso_enabled": True,
+        "sso_config": {
+            "ad_endpoint": "https://ad.example.com",
+            "client_id": "example-client-id",
+            "client_secret": "example-client-secret",
+            "user_group": "AD_USERS_GROUP",
+            "admin_group": "AD_ADMIN_GROUP"
+        }
+    })
+    assert response.status_code == 200
+    assert response.json()["message"] == "Configuration updated successfully"
+    assert response.json()["key"] == "sso"
+    assert response.json()["value"]["rbac_sso_enabled"] is True
+    assert "ad_endpoint" in response.json()["value"]["sso_config"]
