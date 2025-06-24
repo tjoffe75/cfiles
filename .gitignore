@@ -34,7 +34,13 @@ docker-compose.override.yml
 coverage/
 *.lcov
 
+# SQLite-databasfiler
+*.sqlite
+
 # Temporary files
+*.bak
 *.tmp
+*.temp
+*.old
 *.swp
 *.swo
