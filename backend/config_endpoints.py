@@ -1,4 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile, Form
+from fastapi.responses import FileResponse
+from typing import Optional
+import pika
+import json
+import os
 
 app = FastAPI()
 
@@ -106,3 +111,44 @@ def delete_quarantined_file(file_id: str):
 def get_realtime_logs():
     # Placeholder for fetching real-time logs
     return {"logs": ["Log entry 1", "Log entry 2"]}
+
+@app.post("/upload-chunk")
+def upload_chunk(file: UploadFile, chunkIndex: int = Form(...), fileName: str = Form(...)):
+    try:
+        with open(f"uploads/{fileName}.part{chunkIndex}", "wb") as f:
+            f.write(file.file.read())
+        return {"message": "Chunk uploaded successfully", "chunkIndex": chunkIndex}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/scan-virus")
+def scan_virus(file_path: dict):
+    if "file_path" not in file_path:
+        raise HTTPException(status_code=422, detail="Missing 'file_path' key in request body")
+    try:
+        # Send file path to RabbitMQ queue
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        channel = connection.channel()
+        channel.queue_declare(queue='virus_scan')
+        message = json.dumps({'file_path': file_path["file_path"]})
+        channel.basic_publish(exchange='', routing_key='virus_scan', body=message)
+        connection.close()
+        return {"message": "File sent for virus scanning", "file_path": file_path["file_path"]}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/download/{file_id}")
+def download_file(file_id: str):
+    try:
+        # Placeholder logic for checking file status
+        file_status = "clean"  # Replace with actual logic to check file status
+
+        if file_status == "clean":
+            file_path = f"uploads/{file_id}"
+            return FileResponse(file_path, media_type="application/octet-stream", filename=file_id)
+        elif file_status == "infected":
+            return {"message": "File is quarantined due to virus detection", "file_id": file_id}
+        else:
+            raise HTTPException(status_code=404, detail="File not found")
+    except Exception as e:
+        return {"error": str(e)}
