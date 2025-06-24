@@ -57,8 +57,7 @@ const FileUpload = () => {
         await uploadChunk(chunk, chunkIndex);
         setUploadProgress(((chunkIndex + 1) / totalChunks) * 100);
       } catch (error) {
-        console.error('Error uploading chunk:', error);
-        alert('An error occurred while uploading the file.');
+        alert(`Failed to upload chunk ${chunkIndex + 1}`);
         return;
       }
     }
@@ -66,26 +65,26 @@ const FileUpload = () => {
     alert('File uploaded successfully!');
   };
 
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
-
   return (
-    <div>
-      <button onClick={toggleDarkMode}>
-        {darkMode ? 'Disable Dark Mode' : 'Enable Dark Mode'}
-      </button>
-      <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #ccc' }}>
-        <h2>Welcome to the File Upload System</h2>
-        <p>Use the buttons above to toggle dark mode.</p>
-      </div>
-      <h2>Upload File</h2>
+    <div className="file-upload">
+      <h1>File Upload</h1>
+      <label>
+        Dark Mode:
+        <input
+          type="checkbox"
+          checked={darkMode}
+          onChange={() => setDarkMode(!darkMode)}
+        />
+      </label>
       <input type="file" onChange={handleFileChange} />
       <button onClick={handleUpload}>Upload</button>
-      <div>Upload Progress: {uploadProgress.toFixed(2)}%</div>
-      <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #ccc', backgroundColor: '#f9f9f9' }}>
-        <p style={{ color: '#333' }}>If you see this message, the component is rendering correctly.</p>
-      </div>
+      {selectedFile && (
+        <div>
+          <p>File: {selectedFile.name}</p>
+          <p>Size: {selectedFile.size} bytes</p>
+          <progress value={uploadProgress} max="100" />
+        </div>
+      )}
     </div>
   );
 };
