@@ -217,3 +217,7 @@ def download_file(file_id: str):
             raise HTTPException(status_code=404, detail="File not found")
     except Exception as e:
         return {"error": str(e)}
+
+@app.get("/")
+def root():
+    return {"message": "Backend is running"}
