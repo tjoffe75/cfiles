@@ -230,3 +230,17 @@ Alla → Fri åtkomst med global varning
    - Automatiserad byggning och deployment.
 2. **Driftsätt applikationen**:
    - Produktionsmiljö med övervakning.
+
+## 🆕 Versionshistorik
+
+### Version 1.1 (2025-06-25)
+- **Frontend**:
+  - Implementering av filuppladdning med chunking.
+  - Dark mode-funktionalitet.
+  - Uppdatering till React 18 med `createRoot`.
+- **Backend**:
+  - Root-endpoint (`/`) tillagd.
+  - CORS-stöd implementerat.
+
+### Version 1.0
+- Initial release med grundläggande funktionalitet för filhantering, karantän och adminpanel.
