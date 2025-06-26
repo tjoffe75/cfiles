@@ -1,77 +1,51 @@
-# FILES - Filhanteringsapplikation
+# cfiles - Secure File Upload & Scan
 
-## 🚀 Syfte
+A robust application for secure file uploads, where each file is automatically sent to a separate process for virus scanning. Built with a scalable microservice architecture.
 
-En robust applikation för säker filuppladdning, där varje fil automatiskt skickas till en separat process för virusskanning. Systemet är byggt med en skalbar mikroarkitektur som använder en meddelandekö för att hantera asynkrona jobb.
+For a detailed project overview, see [PROJECT.md](PROJECT.md).
+For a deep dive into the technical implementation, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## ✅ Nuvarande Status: Karantänfunktion Implementerad
+## 1. Tech Stack
 
-Projektet har nu ett komplett end-to-end-flöde för säker filuppladdning, asynkron virusskanning och hantering av infekterade filer.
+*   **Backend**: FastAPI (Python)
+*   **Frontend**: React
+*   **Message Queue**: RabbitMQ
+*   **Worker**: Python
+*   **Database**: PostgreSQL
+*   **Virus Scanner**: ClamAV
+*   **Containerization**: Docker & Docker Compose
 
-**Vad som är implementerat och fungerar:**
-*   **Backend API (`/config/upload/`)**: Tar emot filuppladdningar och sparar filinformation i **PostgreSQL**-databasen med status `PENDING`.
-*   **Asynkron bearbetning**: Ett meddelande med fil-ID publiceras till **RabbitMQ**.
-*   **Worker & Skanning**: En worker tar emot jobbet, uppdaterar status till `SCANNING`, och skannar filen med **ClamAV**.
-*   **Databasintegration**: Worker uppdaterar filens status (`CLEAN`, `INFECTED`, `ERROR`) och eventuella detaljer i databasen efter skanning.
-*   **🛡️ Karantänfunktion**: Infekterade filer flyttas automatiskt till en skyddad `/quarantine`-katalog. Sökvägen i databasen uppdateras för att reflektera den nya platsen. Systemet hanterar namnkonflikter genom att ge duplicerade filer unika namn.
-*   **Status-endpoint (`/config/files/`)**: En ny endpoint som visar status för alla uppladdade filer direkt från databasen.
-*   **Robusthet**: `Retry`-logik för anslutningar till både RabbitMQ, ClamAV och PostgreSQL gör systemet tåligt mot uppstartsrace och tillfälliga avbrott.
+## 2. Getting Started
 
-## 🛡️ Karantänfunktion
+**Prerequisites:**
+*   Docker
+*   Docker Compose
 
-När en fil identifieras som `INFECTED` av ClamAV, sker följande automatiskt:
+**Installation & Running:**
 
-1.  **Flytt**: Filen flyttas från den temporära uppladdningskatalogen (`/uploads`) till en isolerad karantänkatalog (`/quarantine`). Båda dessa är Docker-volymer för att bestå data.
-2.  **Namngivning**: Om en fil med samma namn redan finns i karantänen, får den nya filen ett unikt namn (t.ex. `infected_file_1.txt`, `infected_file_2.txt`) för att undvika konflikter.
-3.  **Databasuppdatering**: Filens status i databasen sätts till `INFECTED`, och dess `filepath` uppdateras till den nya sökvägen i karantänmappen.
-
-Detta säkerställer att skadliga filer omedelbart isoleras och att systemet har full spårbarhet.
-
-## 🛠️ Teknisk Arkitektur
-
-*   **Backend API (FastAPI):** Hanterar filuppladdning, databasinteraktioner och publicerar jobb till kön.
-*   **Meddelandekö (RabbitMQ):** Fullt fungerande. Använder kön `file_queue`.
-*   **Worker (Python):** Prenumererar på `file_queue`, hanterar skanning, databasuppdateringar och karantänlogik.
-*   **Virusskanner (ClamAV):** Körs som en nätverkstjänst.
-*   **Databas (PostgreSQL):** Fullt integrerad. Lagrar filinformation, status och sökvägar.
-
-## 🏁 Komma igång & Testa
-
-1.  **Förutsättningar:** Docker och Docker Compose måste vara installerade.
-2.  **Skapa testfiler:**
-    *   Skapa en ofarlig fil: `echo "detta är en säker fil" > safe_file.txt`
-    *   Skapa en EICAR-testfil för att simulera ett virus:
-        ```bash
-        echo 'X5O!P%@AP[4\PZX54(P^)7CC)7}$EICAR-STANDARD-ANTIVIRUS-TEST-FILE!$H+H*' > eicar_test.txt
-        ```
-3.  **Bygg och starta:**
+1.  **Clone the repository:**
+    ```bash
+    git clone <your-repo-url>
+    cd cfiles
+    ```
+2.  **Build and start all services:**
     ```bash
     docker compose up -d --build
     ```
-4.  **Ladda upp filerna:**
-    ```bash
-    # Ladda upp den säkra filen
-    curl -X POST -F "file=@safe_file.txt" http://localhost:8000/config/upload/
+3.  The application is now running:
+    *   **Frontend**: [http://localhost:3000](http://localhost:3000)
+    *   **Backend API**: [http://localhost:8000](http://localhost:8000)
 
-    # Ladda upp den infekterade filen (gärna flera gånger för att testa karantänlogiken)
-    curl -X POST -F "file=@eicar_test.txt" http://localhost:8000/config/upload/
-    curl -X POST -F "file=@eicar_test.txt" http://localhost:8000/config/upload/
-    ```
-5.  **Verifiera flödet:**
-    *   Kontrollera loggarna från workern: `docker compose logs workers`
-    *   Kontrollera status för alla filer via API:et: `curl http://localhost:8000/config/files/`
-    *   Inspektera karantänmappen: `docker compose exec backend ls /quarantine`
+## 3. Usage
 
-## 🗺️ Projekt-Roadmap (Resterande Vision)
+Use the web interface at [http://localhost:3000](http://localhost:3000) to upload and view files. You can also use the API directly.
 
-Följande funktioner från den ursprungliga arkitekturen återstår att implementera:
+**Check status via API:**
+```bash
+curl http://localhost:8000/config/files/
+```
 
-*   **Fullt utbyggt Frontend:**
-    *   Användargränssnitt för uppladdning och visning av resultat.
-    *   Adminpanel för att hantera karantän.
-*   **Utökade Workers:**
-    *   Checksum-worker.
-*   **Adminpanel & Konfigurationshantering:**
-    *   Maintenance mode, SSO/RBAC, loggläsare, certifikathantering etc.
-*   **Säkerhet:**
-    *   JWT-autentisering och RBAC.
+**Inspect the quarantine directory:**
+```bash
+docker compose exec backend ls /quarantine
+```
