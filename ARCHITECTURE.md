@@ -134,6 +134,63 @@ CREATE TABLE admin_config (
 
 ---
 
+## 🔐 RBAC/SSO-konfiguration (Vision)
+
+Systemet ska kunna köras i två lägen gällande autentisering och auktorisering, vilket styrs av en konfigurationsvariabel (t.ex. en miljövariabel `AUTH_MODE` som kan vara `ON` eller `OFF`).
+
+### Läge: `AUTH_MODE=OFF` (Standard)
+
+*   **Beskrivning**: Ingen autentisering krävs. Systemet är helt öppet och alla som når webbgränssnittet kan ladda upp filer.
+*   **Användningsfall**: Enkel, intern användning där nätverket i sig anses vara säkert, eller för testning och demonstration.
+*   **Effekt**:
+    *   Frontend visar uppladdningssidan direkt.
+    *   Backend validerar inte någon användare eller token.
+    *   Ingen koppling mot Active Directory (AD) eller annan SSO-leverantör görs.
+
+### Läge: `AUTH_MODE=ON`
+
+*   **Beskrivning**: Fullständig autentisering och rollbaserad åtkomstkontroll (RBAC) via Single Sign-On (SSO) med Active Directory.
+*   **Användningsfall**: Produktionsmiljöer i företag där man behöver säkerställa att endast behöriga användare kan ladda upp filer och administrera systemet.
+*   **Effekt**:
+    *   **Frontend**: Omdirigerar användaren till organisationens SSO-inloggningssida. Efter lyckad inloggning hämtas en token (t.ex. JWT).
+    *   **Backend**: Alla anrop till skyddade ändpunkter (t.ex. `/upload`, `/admin/*`) måste innehålla en giltig JWT. API:et validerar token mot AD.
+    *   **Roller**: Systemet kommer att ha minst två roller:
+        *   `User`: Kan ladda upp filer och se status på sina egna uppladdningar.
+        *   `Admin`: Har fulla rättigheter, inklusive att se alla filer, hantera karantän och ändra systemkonfiguration via adminpanelen.
+
+### Konfigurationstabell
+
+| `AUTH_MODE` | Autentisering | Användarroller | Adminpanel | Målmiljö      |
+| :---------- | :-------------- | :------------- | :--------- | :-------------- |
+| **`OFF`**   | Nej             | N/A            | Ej aktiv   | Test, Demo      |
+| **`ON`**    | Ja (SSO/AD)     | `User`, `Admin`  | Aktiv      | Produktion      |
+
+---
+
+## 🔧 Maintenance Mode (Vision)
+
+Systemet ska kunna sättas i ett underhållsläge via en miljövariabel, t.ex. `MAINTENANCE_MODE=ON`.
+
+*   **Syfte**: Att kunna stänga ner möjligheten för användare att ladda upp filer under planerade underhåll, uppdateringar eller vid felsökning av kritiska problem.
+*   **Effekt**:
+    *   **Frontend**: Istället för uppladdningsgränssnittet visas en statisk sida med ett meddelande om att systemet är under underhåll och när det förväntas vara tillgängligt igen.
+    *   **Backend**: `/upload`-ändpunkten och andra relevanta API-anrop returnerar en `503 Service Unavailable`-status med ett informativt meddelande.
+    *   Adminpanelen kan fortfarande vara tillgänglig för administratörer för att de ska kunna hantera systemet under underhållsfönstret.
+
+---
+
+## 🔒 HTTPS och Certifikathantering (Vision)
+
+För att säkerställa säker kommunikation ska all extern trafik till applikationen gå över HTTPS.
+
+*   **Implementation**: Detta hanteras inte direkt i applikationstjänsterna (frontend/backend) utan av en **Reverse Proxy** (t.ex. Traefik, som kan konfigureras i `docker-compose.yml`, eller Nginx).
+*   **Ansvarsfördelning**:
+    *   **Reverse Proxy**: Terminerar SSL/TLS-anslutningar. Den ansvarar för att hantera certifikat.
+    *   **Applikationstjänster**: Kommunicerar internt via HTTP, eftersom de körs i ett skyddat Docker-nätverk.
+*   **Automatisk Certifikatförnyelse**: Genom att använda en reverse proxy med Let's Encrypt-integration kan SSL-certifikat skapas och förnyas automatiskt, vilket minimerar manuell hantering och säkerställer att certifikaten aldrig går ut.
+
+---
+
 ## 🎯 Informationsflöden
 
 ### Implementerat Flöde

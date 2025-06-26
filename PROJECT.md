@@ -6,7 +6,7 @@ Detta dokument beskriver det övergripande syftet, den nuvarande statusen och de
 
 ## 🎯 Syfte och Mål (Vision)
 
-Applikationens primära syfte är att erbjuda en robust och säker plattform för filhantering, med fokus på automatisk säkerhetskontroll och skalbarhet.
+Applikationens primära syfte är att erbjuda en robust och säker plattform för skanning av filer, med fokus på automatisk säkerhetskontroll och skalbarhet.
 
 **Kärnfunktionalitet (Vision):**
 *   Säker uppladdning av filer.
