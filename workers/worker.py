@@ -4,12 +4,15 @@ import clamd
 import logging
 import time
 import json
+import shutil
 from sqlalchemy.orm import Session
 from database.database import SessionLocal
 from database.models import File, ScanStatus
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+QUARANTINE_DIR = "/quarantine"
 
 def connect_clamav():
     """Connects to ClamAV with retries."""
@@ -41,6 +44,47 @@ def update_scan_status(db: Session, file_id: int, status: ScanStatus, details: s
     except Exception as e:
         logging.error(f"Failed to update database for file {file_id}: {e}")
         db.rollback()
+
+def quarantine_file(db: Session, file_id: int, file_path: str):
+    """Moves a file to the quarantine directory and updates its path in the database."""
+    if not os.path.exists(file_path):
+        logging.error(f"Cannot quarantine file: {file_path} does not exist.")
+        return None
+
+    filename = os.path.basename(file_path)
+    new_path = os.path.join(QUARANTINE_DIR, filename)
+
+    # Handle filename conflicts in quarantine
+    counter = 1
+    while os.path.exists(new_path):
+        name, extension = os.path.splitext(filename)
+        new_filename = f"{name}_{counter}{extension}"
+        new_path = os.path.join(QUARANTINE_DIR, new_filename)
+        counter += 1
+
+    try:
+        # Ensure the quarantine directory exists inside the container
+        os.makedirs(QUARANTINE_DIR, exist_ok=True)
+        
+        shutil.move(file_path, new_path)
+        logging.info(f"Moved infected file {file_id} to quarantine at {new_path}")
+
+        # Update the filepath in the database
+        db_file = db.query(File).filter(File.id == file_id).first()
+        if db_file:
+            db_file.filepath = new_path
+            db.commit()
+            logging.info(f"Updated filepath for file {file_id} to {new_path}")
+            return new_path
+        else:
+            logging.warning(f"Could not find file {file_id} to update its path after quarantine.")
+            return None # Return None as the path could not be updated
+            
+    except Exception as e:
+        logging.error(f"Failed to move file {file_id} to quarantine: {e}")
+        db.rollback()
+        return None
+
 
 def connect_to_rabbitmq():
     """Establishes a connection to RabbitMQ with retries."""
@@ -103,6 +147,8 @@ def main():
                         if result:
                             status, details = result[file_path]
                             if status == 'FOUND':
+                                logging.info(f"File {file_id} is INFECTED. Moving to quarantine.")
+                                quarantine_file(db, file_id, file_path)
                                 update_scan_status(db, file_id, ScanStatus.INFECTED, details)
                             else: # OK
                                 update_scan_status(db, file_id, ScanStatus.CLEAN)

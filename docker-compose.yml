@@ -22,6 +22,7 @@ services:
       - ./backend:/app
       - ./testfiles:/files
       - ./uploads:/uploads
+      - ./quarantine:/quarantine
     networks:
       - filesapp-network
     depends_on:
@@ -38,9 +39,11 @@ services:
     depends_on:
       - rabbitmq
       - postgres
+      - clamav
     volumes:
       - ./testfiles:/files
       - ./uploads:/uploads
+      - ./quarantine:/quarantine
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -74,9 +77,15 @@ services:
     ports:
       - "3310:3310"
     restart: always
+    healthcheck:
+      test: ["CMD", "clamdscan", "--version"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     volumes:
       - ./testfiles:/files
       - ./uploads:/uploads
+      - ./quarantine:/quarantine
     networks:
       - filesapp-network
 
