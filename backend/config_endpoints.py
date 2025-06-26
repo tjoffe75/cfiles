@@ -1,10 +1,11 @@
-from fastapi import FastAPI, HTTPException, UploadFile, Form
+from fastapi import FastAPI, HTTPException, UploadFile, Form, File
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
 import pika
 import json
 import os
+import shutil
 
 app = FastAPI()
 
@@ -15,6 +16,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+UPLOAD_DIR = "/uploads"
 
 # In-memory configuration storage for demonstration purposes
 configurations = {
@@ -54,6 +57,41 @@ configurations.update({
         }
     }
 })
+
+@app.post("/upload/")
+async def upload_file(file: UploadFile = File(...)):
+    if not os.path.exists(UPLOAD_DIR):
+        os.makedirs(UPLOAD_DIR)
+
+    file_path = os.path.join(UPLOAD_DIR, file.filename)
+
+    # Save the uploaded file
+    try:
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not save file: {e}")
+
+    # Publish message to RabbitMQ
+    try:
+        connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+        channel = connection.channel()
+        channel.queue_declare(queue='file_queue', durable=True)
+        message = {'file_path': file_path}
+        channel.basic_publish(
+            exchange='',
+            routing_key='file_queue',
+            body=json.dumps(message),
+            properties=pika.BasicProperties(
+                delivery_mode=2,  # make message persistent
+            ))
+        connection.close()
+    except Exception as e:
+        # If publishing fails, we should probably delete the saved file
+        os.remove(file_path)
+        raise HTTPException(status_code=500, detail=f"Could not publish message to RabbitMQ: {e}")
+
+    return {"message": f"File '{file.filename}' uploaded and sent for scanning."}
 
 @app.get("/config")
 def get_config():
