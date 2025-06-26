@@ -2,6 +2,9 @@
 node_modules/
 build/
 dist/
+npm-debug.log*
+yarn-error.log*
+yarn.lock
 
 # Python-relaterade filer
 __pycache__/
@@ -10,6 +13,12 @@ __pycache__/
 *.pyd
 env/
 venv/
+.venv/
+ENV/
+.env
+
+# Celery
+celerybeat-schedule
 
 # Loggfiler
 *.log
@@ -33,6 +42,8 @@ docker-compose.override.yml
 # Test- och täckningsrapporter
 coverage/
 *.lcov
+htmlcov/
+.pytest_cache/
 
 # SQLite-databasfiler
 *.sqlite
