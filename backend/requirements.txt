@@ -3,3 +3,5 @@ uvicorn
 pika
 jsonschema
 python-multipart
+sqlalchemy
+psycopg2-binary

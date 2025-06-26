@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, UploadFile, Form, File
+from fastapi import FastAPI, HTTPException, UploadFile, Form, File, Depends
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional
@@ -6,6 +6,10 @@ import pika
 import json
 import os
 import shutil
+from sqlalchemy.orm import Session
+
+from database import models
+from database.database import SessionLocal
 
 app = FastAPI()
 
@@ -16,6 +20,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+# Dependency to get the database session
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 UPLOAD_DIR = "/uploads"
 
@@ -59,7 +71,7 @@ configurations.update({
 })
 
 @app.post("/upload/")
-async def upload_file(file: UploadFile = File(...)):
+async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR)
 
@@ -72,12 +84,18 @@ async def upload_file(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not save file: {e}")
 
+    # Create a database record
+    db_file = models.File(filename=file.filename, filepath=file_path, status=models.ScanStatus.PENDING)
+    db.add(db_file)
+    db.commit()
+    db.refresh(db_file)
+
     # Publish message to RabbitMQ
     try:
         connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
         channel = connection.channel()
         channel.queue_declare(queue='file_queue', durable=True)
-        message = {'file_path': file_path}
+        message = {'file_path': file_path, 'file_id': db_file.id}
         channel.basic_publish(
             exchange='',
             routing_key='file_queue',
@@ -86,12 +104,18 @@ async def upload_file(file: UploadFile = File(...)):
                 delivery_mode=2,  # make message persistent
             ))
         connection.close()
+        return {"filename": file.filename, "id": db_file.id, "status": "PENDING"}
     except Exception as e:
-        # If publishing fails, we should probably delete the saved file
-        os.remove(file_path)
+        # If RabbitMQ fails, update DB status to ERROR
+        db_file.status = models.ScanStatus.ERROR
+        db_file.details = f"Failed to publish to RabbitMQ: {e}"
+        db.commit()
         raise HTTPException(status_code=500, detail=f"Could not publish message to RabbitMQ: {e}")
 
-    return {"message": f"File '{file.filename}' uploaded and sent for scanning."}
+@app.get("/files/")
+async def get_all_files(db: Session = Depends(get_db)):
+    files = db.query(models.File).all()
+    return files
 
 @app.get("/config")
 def get_config():

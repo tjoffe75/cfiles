@@ -3,10 +3,15 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+# Copy requirements first for better layer caching
+COPY workers/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install clamd
 
-COPY . .
+# Copy the shared database models
+COPY backend/database ./database
+
+# Copy the worker script
+COPY workers/worker.py .
 
 CMD ["python", "-u", "worker.py"]

@@ -1,2 +1,4 @@
 pika
 jsonschema
+sqlalchemy
+psycopg2-binary
