@@ -34,6 +34,8 @@ services:
       - filesapp-network
     depends_on:
       - rabbitmq
+    volumes:
+      - ./testfiles:/files
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -53,6 +55,17 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    networks:
+      - filesapp-network
+
+  clamav:
+    image: clamav/clamav:latest
+    container_name: clamav
+    ports:
+      - "3310:3310"
+    restart: always
+    volumes:
+      - ./testfiles:/files
     networks:
       - filesapp-network
 
