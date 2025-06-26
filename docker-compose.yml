@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   frontend:
     build:
@@ -11,6 +9,8 @@ services:
       - ./frontend:/app
     networks:
       - filesapp-network
+    depends_on:
+      - backend
 
   backend:
     build:
@@ -20,11 +20,12 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      - ./testfiles:/files
     networks:
       - filesapp-network
     depends_on:
       - rabbitmq
-      - postgres
+      - clamav
 
   workers:
     build:
