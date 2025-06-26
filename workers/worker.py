@@ -3,25 +3,34 @@ import os
 import clamd
 import logging
 import time
+import json
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def scan_file(file_path):
-    """Scans a file using ClamAV."""
-    try:
-        cd = clamd.ClamdNetworkSocket(host='clamav', port=3310)
-        logging.info(f"Scanning file: {file_path}")
-        result = cd.scan(file_path)
-        if result is None:
-            logging.warning("No result from ClamAV scan.")
-        return result
-    except clamd.ConnectionError as e:
-        logging.error(f"ClamAV connection error: {e}")
-        return None
-    except Exception as e:
-        logging.error(f"Error scanning file: {e}")
-        return None
+    """Scans a file using ClamAV with connection retries."""
+    max_retries = 5
+    retry_delay = 5
+    for attempt in range(max_retries):
+        try:
+            cd = clamd.ClamdNetworkSocket(host='clamav', port=3310)
+            # Ping to check connection
+            cd.ping()
+            logging.info(f"Successfully connected to ClamAV on attempt {attempt + 1}")
+            logging.info(f"Scanning file: {file_path}")
+            result = cd.scan(file_path)
+            if result is None:
+                logging.warning("No result from ClamAV scan.")
+            return result
+        except clamd.ConnectionError as e:
+            logging.warning(f"ClamAV connection error on attempt {attempt + 1}/{max_retries}: {e}. Retrying in {retry_delay} seconds...")
+            time.sleep(retry_delay)
+        except Exception as e:
+            logging.error(f"An unexpected error occurred during scanning: {e}")
+            return None
+    logging.error("Could not connect to ClamAV after several retries.")
+    return None
 
 def connect_to_rabbitmq():
     """Establishes a connection to RabbitMQ with retries."""
@@ -51,7 +60,8 @@ def main():
 
         def callback(ch, method, properties, body):
             try:
-                file_path = body.decode()
+                message_data = json.loads(body.decode())
+                file_path = message_data['file_path']
                 logging.info(f"Received file path: {file_path}")
 
                 if not os.path.exists(file_path):
