@@ -1,10 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import FileUpload from './components/FileUpload';
+import App from './App'; // Importera App-komponenten
+import './App.css'; // Importera den nya CSS-filen
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <FileUpload />
+    <App />
   </React.StrictMode>
 );

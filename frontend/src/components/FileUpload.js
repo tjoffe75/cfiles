@@ -1,96 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import './DarkMode.css';
+import React, { useState } from 'react';
 
-const FileUpload = () => {
+const FileUpload = ({ onUploadSuccess }) => {
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [darkMode, setDarkMode] = useState(false);
-
-  const CHUNK_SIZE = 10 * 1024 * 1024; // 10 MB per chunk
-
-  useEffect(() => {
-    const savedMode = localStorage.getItem('darkMode');
-    if (savedMode) {
-      setDarkMode(savedMode === 'true');
-    }
-  }, []);
-
-  useEffect(() => {
-    document.body.className = darkMode ? 'dark-mode' : '';
-    localStorage.setItem('darkMode', darkMode);
-  }, [darkMode]);
+  const [message, setMessage] = useState('');
 
   const handleFileChange = (event) => {
     setSelectedFile(event.target.files[0]);
-  };
-
-  const uploadChunk = async (chunk, chunkIndex) => {
-    const formData = new FormData();
-    formData.append('file', chunk);
-    formData.append('chunkIndex', chunkIndex);
-    formData.append('fileName', selectedFile.name);
-
-    const response = await fetch('http://localhost:8000/config/upload-chunk', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error('Failed to upload chunk');
-    }
+    setMessage(''); // Clear message when new file is selected
   };
 
   const handleUpload = async () => {
-    console.log('Upload button clicked');
     if (!selectedFile) {
-      alert('Please select a file first!');
-      console.log('No file selected');
+      setMessage('Please select a file first!');
       return;
     }
 
-    console.log(`File selected: ${selectedFile.name}, size: ${selectedFile.size}`);
-    const totalChunks = Math.ceil(selectedFile.size / CHUNK_SIZE);
+    const formData = new FormData();
+    formData.append('file', selectedFile);
 
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      const start = chunkIndex * CHUNK_SIZE;
-      const end = Math.min(start + CHUNK_SIZE, selectedFile.size);
-      const chunk = selectedFile.slice(start, end);
+    setMessage('Uploading...');
 
-      try {
-        console.log(`Uploading chunk ${chunkIndex + 1} of ${totalChunks}`);
-        await uploadChunk(chunk, chunkIndex);
-        setUploadProgress(((chunkIndex + 1) / totalChunks) * 100);
-      } catch (error) {
-        console.error(`Failed to upload chunk ${chunkIndex + 1}:`, error);
-        alert(`Failed to upload chunk ${chunkIndex + 1}`);
-        return;
+    try {
+      const response = await fetch('http://localhost:8000/config/upload/', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ detail: 'An unknown error occurred.' }));
+        throw new Error(errorData.detail || 'Failed to upload file');
       }
-    }
 
-    alert('File uploaded successfully!');
-    console.log('File uploaded successfully');
+      const result = await response.json();
+      setMessage(`File uploaded successfully! Status: ${result.status}`);
+      // Clear the file input after successful upload
+      document.querySelector('input[type="file"]').value = '';
+      setSelectedFile(null);
+      if (onUploadSuccess) {
+        onUploadSuccess(); // Notify parent component to refresh file list
+      }
+    } catch (error) {
+      setMessage(`Error: ${error.message}`);
+      console.error('Upload failed:', error);
+    }
   };
 
   return (
     <div className="file-upload">
-      <h1>File Upload</h1>
-      <label>
-        Dark Mode:
-        <input
-          type="checkbox"
-          checked={darkMode}
-          onChange={() => setDarkMode(!darkMode)}
-        />
-      </label>
+      <h2>Upload a New File</h2>
       <input type="file" onChange={handleFileChange} />
       <button onClick={handleUpload}>Upload</button>
-      {selectedFile && (
-        <div>
-          <p>File: {selectedFile.name}</p>
-          <p>Size: {selectedFile.size} bytes</p>
-          <progress value={uploadProgress} max="100" />
-        </div>
-      )}
+      {message && <p className="upload-message">{message}</p>}
     </div>
   );
 };
