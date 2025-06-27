@@ -1,0 +1,29 @@
+.admin-dashboard {
+    padding: 2rem;
+}
+
+.admin-nav {
+    margin-top: 1rem;
+}
+
+.admin-menu {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    gap: 1rem;
+}
+
+.admin-link {
+    display: block;
+    padding: 0.75rem 1.5rem;
+    background-color: #f0f0f0;
+    border-radius: 5px;
+    text-decoration: none;
+    color: #333;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.admin-link:hover {
+    background-color: #e0e0e0;
+}
