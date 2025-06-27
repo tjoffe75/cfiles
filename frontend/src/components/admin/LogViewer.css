@@ -1,0 +1,41 @@
+.log-container {
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    padding: 15px;
+    max-height: 500px;
+    overflow-y: auto;
+    font-family: monospace;
+}
+
+.log-entry {
+    margin-bottom: 10px;
+    padding: 5px;
+    border-radius: 3px;
+}
+
+.log-timestamp {
+    color: #888;
+    margin-right: 15px;
+}
+
+.log-level {
+    font-weight: bold;
+    margin-right: 15px;
+}
+
+.log-INFO {
+    color: #31708f;
+}
+
+.log-WARNING {
+    color: #8a6d3b;
+}
+
+.log-ERROR {
+    color: #a94442;
+    background-color: #f2dede;
+}
+
+.error {
+    color: #a94442;
+}

@@ -1,0 +1,42 @@
+.admin-layout {
+    display: flex;
+}
+
+.side-nav {
+    width: 250px;
+    padding: 20px;
+    background-color: #f4f4f4;
+    height: 100vh;
+}
+
+.side-nav h3 {
+    margin-top: 0;
+}
+
+.side-nav ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.side-nav ul li {
+    margin-bottom: 10px;
+}
+
+.side-nav ul li a {
+    text-decoration: none;
+    color: #333;
+}
+
+.admin-content {
+    flex-grow: 1;
+    padding: 20px;
+}
+
+/* Dark mode styles */
+.dark-mode .side-nav {
+    background-color: #333;
+}
+
+.dark-mode .side-nav ul li a {
+    color: #f4f4f4;
+}

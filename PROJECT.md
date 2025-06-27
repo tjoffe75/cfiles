@@ -48,8 +48,8 @@ Följande funktioner från den ursprungliga arkitekturen återstår att implemen
 3.  **Säkerhet och Autentisering:**
     *   Implementera JWT-autentisering.
     *   Full integration mot Active Directory för SSO och RBAC.
-4.  **Utökade Workers:**
-    *   Implementera en `checksum-worker`.
+4.  **checksum:**
+    *   Implementera en checksum check funktion  .
 5.  **Drift och Övervakning:**
     *   Sätta upp CI/CD-pipelines (t.ex. GitHub Actions).
     *   Etablera central logghantering (t.ex. Elastic Stack).
