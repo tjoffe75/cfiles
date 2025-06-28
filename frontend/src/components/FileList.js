@@ -64,7 +64,7 @@ const FileList = ({ refreshKey }) => {
               </td>
               <td>{file.checksum}</td>
               <td>
-                {file.scan_status === 'clean' && (
+                {file.scan_status === 'CLEAN' && (
                   <a href={`http://localhost:8000/download/${file.id}`} download>
                     Download
                   </a>
