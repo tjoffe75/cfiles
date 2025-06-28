@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, UploadFile, Form, File, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, Form, File, Depends, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from typing import Optional, List
@@ -6,8 +6,11 @@ import pika
 import json
 import os
 import shutil
+import logging
 from sqlalchemy.orm import Session
+from sqlalchemy import desc
 from datetime import datetime
+import asyncio
 
 import schemas
 from database import models
@@ -15,6 +18,23 @@ from database.database import SessionLocal
 from enums import ScanStatus
 
 router = APIRouter()
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+manager = ConnectionManager()
 
 # Dependency to get the database session
 def get_db():
@@ -95,9 +115,26 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         db.commit()
         raise HTTPException(status_code=500, detail=f"Could not publish message to RabbitMQ: {e}")
 
+@router.websocket("/ws/status")
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
+    client_id = f"{websocket.client.host}:{websocket.client.port}"
+    logging.info(f"Connection open for {client_id}")
+    try:
+        while True:
+            await websocket.send_text("ping") # Send a ping to keep connection alive
+            await asyncio.sleep(15) # every 15 seconds
+    except WebSocketDisconnect:
+        logging.info(f"Client {client_id} disconnected.")
+    except Exception as e:
+        logging.error(f"Error in WebSocket for {client_id}: {e}")
+    finally:
+        manager.disconnect(websocket)
+        logging.info(f"Connection with {client_id} closed and cleaned up.")
+
 @router.get("/files/", response_model=List[schemas.File])
 def get_files(db: Session = Depends(get_db)):
-    files = db.query(models.File).all()
+    files = db.query(models.File).order_by(models.File.upload_date.desc()).all()
     return files
 
 @router.get("/files/{file_id}", response_model=schemas.File)
