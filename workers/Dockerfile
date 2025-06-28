@@ -10,6 +10,7 @@ RUN pip install clamd
 
 # Copy the shared database models
 COPY backend/database ./database
+COPY backend/enums.py .
 
 # Copy the worker script
 COPY workers/worker.py .

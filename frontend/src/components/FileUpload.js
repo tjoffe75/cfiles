@@ -21,7 +21,7 @@ const FileUpload = ({ onUploadSuccess }) => {
     setMessage('Uploading...');
 
     try {
-      const response = await fetch('http://localhost:8000/config/upload/', {
+      const response = await fetch('http://localhost:8000/upload/', {
         method: 'POST',
         body: formData,
       });

@@ -20,7 +20,7 @@ Applikationens primära syfte är att erbjuda en robust och säker plattform fö
 
 ## ✅ Nuvarande Status (Juni 2025)
 
-Projektet har ett fungerande end-to-end-flöde för säker filuppladdning, asynkron virusskanning och hantering av infekterade filer.
+Projektet har ett fungerande end-to-end-flöde för säker filuppladdning, asynkron virusskanning och hantering av infekterade filer. En adminpanel har implementerats för att ge administratörer insyn och kontroll över systemet.
 
 **Vad som är implementerat och fungerar:**
 *   **Backend API (`/config/upload/`)**: Tar emot filuppladdningar och sparar filinformation i databasen med status `PENDING`.
@@ -30,6 +30,10 @@ Projektet har ett fungerande end-to-end-flöde för säker filuppladdning, asynk
 *   **🛡️ Karantänfunktion**: Infekterade filer flyttas automatiskt till en skyddad `/quarantine`-katalog och sökvägen i databasen uppdateras.
 *   **Status-endpoint (`/config/files/`)**: Ett API som visar status för alla uppladdade filer.
 *   **Frontend**: Ett grundläggande React-gränssnitt för att ladda upp filer och se deras status.
+*   **Adminpanel**: En nyligen tillagd adminpanel med följande funktioner:
+    *   **Dashboard**: En översiktsvy för systemstatus.
+    *   **Log Viewer**: Visar applikationsloggar.
+    *   **Quarantine Manager**: Hanterar filer i karantän (frigivning eller radering).
 *   **Robusthet**: Inbyggd `retry`-logik för anslutningar till RabbitMQ, ClamAV och PostgreSQL.
 
 ---
@@ -38,18 +42,14 @@ Projektet har ett fungerande end-to-end-flöde för säker filuppladdning, asynk
 
 Följande funktioner från den ursprungliga arkitekturen återstår att implementera:
 
-1.  **Utveckla Frontend-Adminpanel:**
-    *   Loggläsare för applikationsloggar.
-    *   Hantering av filer i karantän (frigivning eller radering).
-    *   En översiktsvy för systemstatus.
-2.  **Implementera Backend för Konfiguration:**
+1.  **Implementera Backend för Konfiguration:**
     *   Endpoints för att hantera `maintenance mode`, `SSO/RBAC`, och `HTTPS`-certifikat.
     *   Logik för att ladda upp företagslogotyp.
-3.  **Säkerhet och Autentisering:**
+2.  **Säkerhet och Autentisering:**
     *   Implementera JWT-autentisering.
     *   Full integration mot Active Directory för SSO och RBAC.
-4.  **checksum:**
-    *   Implementera en checksum check funktion  .
-5.  **Drift och Övervakning:**
+3.  **Checksum:**
+    *   Implementera en checksum check funktion.
+4.  **Drift och Övervakning:**
     *   Sätta upp CI/CD-pipelines (t.ex. GitHub Actions).
     *   Etablera central logghantering (t.ex. Elastic Stack).

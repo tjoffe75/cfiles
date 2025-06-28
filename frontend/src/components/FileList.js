@@ -4,21 +4,18 @@ const FileList = ({ refreshKey }) => {
   const [files, setFiles] = useState([]);
   const [error, setError] = useState(null);
 
-  const fetchFiles = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/config/files/');
-      if (!response.ok) {
-        throw new Error('Network response was not ok');
-      }
-      const data = await response.json();
-      setFiles(data);
-    } catch (error) {
-      setError(error.message);
-      console.error('Failed to fetch files:', error);
-    }
-  };
-
   useEffect(() => {
+    const fetchFiles = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/files/');
+        const data = await response.json();
+        setFiles(data);
+      } catch (error) {
+        setError(error.message);
+        console.error('Failed to fetch files:', error);
+      }
+    };
+
     fetchFiles(); // Fetch initially
 
     const interval = setInterval(() => {
@@ -54,21 +51,25 @@ const FileList = ({ refreshKey }) => {
           <tr>
             <th>Filename</th>
             <th>Status</th>
-            <th>Details</th>
-            <th>Path</th>
+            <th>Checksum</th>
+            <th>Download</th>
           </tr>
         </thead>
         <tbody>
           {files.map((file) => (
             <tr key={file.id}>
               <td>{file.filename}</td>
-              <td>
-                <span className={`status-badge ${getStatusClass(file.status)}`}>
-                  {file.status}
-                </span>
+              <td className={getStatusClass(file.scan_status)}>
+                {file.scan_status}
               </td>
-              <td>{file.details}</td>
-              <td>{file.filepath}</td>
+              <td>{file.checksum}</td>
+              <td>
+                {file.scan_status === 'clean' && (
+                  <a href={`http://localhost:8000/download/${file.id}`} download>
+                    Download
+                  </a>
+                )}
+              </td>
             </tr>
           ))}
         </tbody>

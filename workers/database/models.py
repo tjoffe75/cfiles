@@ -9,6 +9,8 @@ class ScanStatus(str, enum.Enum):
     CLEAN = "CLEAN"
     INFECTED = "INFECTED"
     ERROR = "ERROR"
+    QUARANTINED = "QUARANTINED"
+    DELETED = "DELETED"
 
 class File(Base):
     __tablename__ = "files"

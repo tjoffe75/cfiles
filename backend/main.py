@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from config_endpoints import app as config_app
+from config_endpoints import router as config_router
 from database import models
 from database.database import engine
 import time
 import logging
 from sqlalchemy.exc import OperationalError
+from fastapi.middleware.cors import CORSMiddleware
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,7 +42,16 @@ async def lifespan(app: FastAPI):
     logger.info("Application shutdown.")
 
 app = FastAPI(lifespan=lifespan)
-app.mount("/config", config_app)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Allows the React app to connect
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
+
+app.include_router(config_router)
 
 @app.get("/")
 def root():

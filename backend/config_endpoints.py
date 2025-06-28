@@ -1,25 +1,20 @@
-from fastapi import FastAPI, HTTPException, UploadFile, Form, File, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, Form, File, Depends
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
+from typing import Optional, List
 import pika
 import json
 import os
 import shutil
 from sqlalchemy.orm import Session
+from datetime import datetime
 
+import schemas
 from database import models
 from database.database import SessionLocal
+from enums import ScanStatus
 
-app = FastAPI()
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"]
-)
+router = APIRouter()
 
 # Dependency to get the database session
 def get_db():
@@ -31,68 +26,56 @@ def get_db():
 
 UPLOAD_DIR = "/uploads"
 
-# In-memory configuration storage for demonstration purposes
-configurations = {
-    "maintenance": {
-        "maintenance_mode": False,
-        "maintenance_message": ""
-    },
-    "sso": {
-        "rbac_sso_enabled": False,
-        "sso_config": {
-            "ad_endpoint": "",
-            "client_id": "",
-            "client_secret": "",
-            "user_group": "",
-            "admin_group": ""
-        }
-    },
-    "https_enabled": False,
-    "https_cert": "",
-    "company_logo": ""
-}
-
-# Ensure required keys exist in configurations dictionary
-configurations.update({
-    "maintenance": {
-        "maintenance_mode": False,
-        "maintenance_message": ""
-    },
-    "sso": {
-        "rbac_sso_enabled": False,
-        "sso_config": {
-            "ad_endpoint": "",
-            "client_id": "",
-            "client_secret": "",
-            "user_group": "",
-            "admin_group": ""
-        }
-    }
-})
-
-@app.post("/upload/")
+@router.post("/upload/", response_model=schemas.FileUploadResponse)
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR)
 
     file_path = os.path.join(UPLOAD_DIR, file.filename)
 
-    # Save the uploaded file
+    # Get file size
+    file.file.seek(0, os.SEEK_END)
+    file_size = file.file.tell()
+    file.file.seek(0)
+
+    # Check if a file with the same path already exists
+    db_file = db.query(models.File).filter(models.File.filepath == file_path).first()
+
+    # Save the uploaded file, overwriting if it exists
     try:
         with open(file_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not save file: {e}")
 
-    # Create a database record
-    db_file = models.File(filename=file.filename, filepath=file_path, status=models.ScanStatus.PENDING)
-    db.add(db_file)
+    if db_file:
+        # If file exists, update its status to PENDING for re-scanning
+        db_file.scan_status = models.ScanStatus.PENDING
+        db_file.scan_details = "Re-uploaded for scanning."
+        db_file.upload_date = datetime.utcnow() # Update timestamp
+        db_file.filesize = file_size
+        db_file.is_quarantined = False # Reset quarantine status
+    else:
+        # If file doesn't exist, create a new database record
+        db_file = models.File(
+            filename=file.filename, 
+            filepath=file_path, 
+            filesize=file_size,
+            scan_status=models.ScanStatus.PENDING
+        )
+        db.add(db_file)
+    
     db.commit()
     db.refresh(db_file)
 
     # Publish message to RabbitMQ
     try:
-        connection = pika.BlockingConnection(pika.ConnectionParameters(host='rabbitmq'))
+        rabbitmq_user = os.getenv("RABBITMQ_DEFAULT_USER", "guest")
+        rabbitmq_pass = os.getenv("RABBITMQ_DEFAULT_PASS", "guest")
+        credentials = pika.PlainCredentials(rabbitmq_user, rabbitmq_pass)
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(host='rabbitmq', credentials=credentials)
+        )
         channel = connection.channel()
         channel.queue_declare(queue='file_queue', durable=True)
         message = {'file_path': file_path, 'file_id': db_file.id}
@@ -107,140 +90,82 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         return {"filename": file.filename, "id": db_file.id, "status": "PENDING"}
     except Exception as e:
         # If RabbitMQ fails, update DB status to ERROR
-        db_file.status = models.ScanStatus.ERROR
-        db_file.details = f"Failed to publish to RabbitMQ: {e}"
+        db_file.scan_status = models.ScanStatus.ERROR
+        db_file.scan_details = f"Failed to publish to RabbitMQ: {e}"
         db.commit()
         raise HTTPException(status_code=500, detail=f"Could not publish message to RabbitMQ: {e}")
 
-@app.get("/files/")
-async def get_all_files(db: Session = Depends(get_db)):
+@router.get("/files/", response_model=List[schemas.File])
+def get_files(db: Session = Depends(get_db)):
     files = db.query(models.File).all()
     return files
 
-@app.get("/config")
-def get_config():
-    return configurations
+@router.get("/files/{file_id}", response_model=schemas.File)
+def get_file(file_id: int, db: Session = Depends(get_db)):
+    file = db.query(models.File).filter(models.File.id == file_id).first()
+    if not file:
+        raise HTTPException(status_code=404, detail="File not found")
+    return file
 
-@app.put("/config/{key}")
-def update_config(key: str, value: dict):
-    if key not in configurations:
-        raise HTTPException(status_code=404, detail="Configuration key not found")
-    configurations[key] = value
-    return {"message": "Configuration updated successfully", "key": key, "value": value}
+@router.get("/download/{file_id}")
+async def download_file(file_id: int, db: Session = Depends(get_db)):
+    db_file = db.query(models.File).filter(models.File.id == file_id).first()
+    if not db_file:
+        raise HTTPException(status_code=404, detail="File not found")
 
-@app.post("/config/logo")
-def upload_logo(logo: dict):
-    if "logo" not in logo:
-        raise HTTPException(status_code=422, detail="Missing 'logo' key in request body")
-    configurations["company_logo"] = logo["logo"]
-    return {"message": "Logo uploaded successfully", "logo": logo["logo"]}
+    # Only allow download if the scan status is 'clean'
+    if db_file.scan_status != ScanStatus.CLEAN.value:
+        raise HTTPException(status_code=403, detail=f"File cannot be downloaded. Status: {db_file.scan_status}")
 
-@app.get("/quarantine")
-def get_quarantined_files():
-    # Placeholder for fetching quarantined files
-    return {"quarantined_files": []}
+    return FileResponse(db_file.filepath, media_type="application/octet-stream", filename=db_file.filename)
 
-@app.put("/quarantine/{file_id}")
-def update_quarantine_status(file_id: str, action: dict):
-    if "action" not in action or action["action"] not in ["release", "delete"]:
-        raise HTTPException(status_code=422, detail="Invalid or missing 'action' key in request body")
-    return {"message": f"File {file_id} {action['action']}d successfully"}
+@router.post("/config/logo")
+async def upload_logo(file: UploadFile = File(...)):
+    # Implementation for uploading logo
+    pass
 
-@app.get("/logs")
-def get_logs():
-    # Placeholder for fetching logs
-    return {"logs": ["Log entry 1", "Log entry 2"]}
+@router.get("/config/logo")
+async def get_logo():
+    # Implementation for getting logo
+    pass
 
-@app.get("/maintenance")
-def get_maintenance_status():
-    return {
-        "maintenance_mode": configurations["maintenance"]["maintenance_mode"],
-        "maintenance_message": configurations["maintenance"]["maintenance_message"]
-    }
+@router.get("/config/files/count", response_model=int)
+def get_files_count(db: Session = Depends(get_db)):
+    count = db.query(models.File).count()
+    return count
 
-@app.put("/maintenance")
-def update_maintenance_status(status: dict):
-    if "maintenance_mode" not in status or "maintenance_message" not in status:
-        raise HTTPException(status_code=422, detail="Missing keys in request body")
-    configurations["maintenance"]["maintenance_mode"] = status["maintenance_mode"]
-    configurations["maintenance"]["maintenance_message"] = status["maintenance_message"]
-    return {"message": "Maintenance status updated successfully"}
+@router.get("/config/files/scanned-count", response_model=int)
+def get_scanned_files_count(db: Session = Depends(get_db)):
+    count = db.query(models.File).filter(models.File.status == models.ScanStatus.SCANNED).count()
+    return count
 
-@app.put("/config/maintenance")
-def toggle_maintenance_mode(mode: dict):
-    if "maintenance_mode" not in mode or "maintenance_message" not in mode:
-        raise HTTPException(status_code=422, detail="Missing 'maintenance_mode' or 'maintenance_message' in request body")
-    configurations["maintenance"] = {
-        "maintenance_mode": mode["maintenance_mode"],
-        "maintenance_message": mode["maintenance_message"]
-    }
-    return {
-        "message": "Configuration updated successfully",
-        "maintenance_mode": configurations["maintenance"]["maintenance_mode"],
-        "maintenance_message": configurations["maintenance"]["maintenance_message"]
-    }
+@router.get("/config/files/infected-count", response_model=int)
+def get_infected_files_count(db: Session = Depends(get_db)):
+    count = db.query(models.File).filter(models.File.status == models.ScanStatus.INFECTED).count()
+    return count
 
-@app.get("/sso")
-def get_sso_config():
-    return {
-        "rbac_sso_enabled": configurations["sso"]["rbac_sso_enabled"],
-        "sso_config": configurations["sso"]["sso_config"]
-    }
+@router.get("/config/system-settings", response_model=List[schemas.SystemSetting])
+def get_system_settings(db: Session = Depends(get_db)):
+    settings = db.query(models.SystemSetting).all()
+    return settings
 
-@app.put("/sso")
-def update_sso_config(config: dict):
-    if "rbac_sso_enabled" not in config or "sso_config" not in config:
-        raise HTTPException(status_code=422, detail="Missing keys in request body")
-    configurations["sso"]["rbac_sso_enabled"] = config["rbac_sso_enabled"]
-    configurations["sso"]["sso_config"] = config["sso_config"]
-    return {"message": "SSO configuration updated successfully"}
+@router.put("/config/system-settings/{setting_id}", response_model=schemas.SystemSetting)
+def update_system_setting(setting_id: int, setting: schemas.SystemSettingUpdate, db: Session = Depends(get_db)):
+    db_setting = db.query(models.SystemSetting).filter(models.SystemSetting.id == setting_id).first()
+    if not db_setting:
+        raise HTTPException(status_code=404, detail="Setting not found")
+    
+    for key, value in setting.dict().items():
+        setattr(db_setting, key, value)
+    
+    db.commit()
+    db.refresh(db_setting)
+    return db_setting
 
-@app.put("/config/sso")
-def configure_sso_rbac(config: dict):
-    if "rbac_sso_enabled" not in config or "sso_config" not in config:
-        raise HTTPException(status_code=422, detail="Missing 'rbac_sso_enabled' or 'sso_config' in request body")
-    configurations["sso"] = {
-        "rbac_sso_enabled": config["rbac_sso_enabled"],
-        "sso_config": config["sso_config"]
-    }
-    return {
-        "message": "Configuration updated successfully",
-        "rbac_sso_enabled": configurations["sso"]["rbac_sso_enabled"],
-        "sso_config": configurations["sso"]["sso_config"]
-    }
-
-@app.get("/https")
-def get_https_config():
-    return {
-        "https_enabled": configurations["https_enabled"],
-        "https_cert": configurations["https_cert"]
-    }
-
-@app.put("/https")
-def update_https_config(config: dict):
-    if "https_enabled" not in config or "https_cert" not in config:
-        raise HTTPException(status_code=422, detail="Missing keys in request body")
-    configurations["https_enabled"] = config["https_enabled"]
-    configurations["https_cert"] = config["https_cert"]
-    return {"message": "HTTPS configuration updated successfully"}
-
-@app.get("/quarantine/files")
-def list_quarantined_files():
-    # Placeholder for fetching quarantined files
-    return {"quarantined_files": ["file1", "file2"]}
-
-@app.delete("/quarantine/files/{file_id}")
-def delete_quarantined_file(file_id: str):
-    # Placeholder for deleting a quarantined file
-    return {"message": f"Quarantined file {file_id} deleted successfully"}
-
-@app.get("/logs/realtime")
-def get_realtime_logs():
-    # Placeholder for fetching real-time logs
-    return {"logs": ["Log entry 1", "Log entry 2"]}
-
-@app.post("/upload-chunk")
-def upload_chunk(file: UploadFile, chunkIndex: int = Form(...), fileName: str = Form(...)):
+@router.post("/upload-chunk")
+async def upload_chunk(file: UploadFile, 
+                        chunkIndex: int = Form(...), 
+                        fileName: str = Form(...)):
     try:
         with open(f"uploads/{fileName}.part{chunkIndex}", "wb") as f:
             f.write(file.file.read())
@@ -248,8 +173,8 @@ def upload_chunk(file: UploadFile, chunkIndex: int = Form(...), fileName: str = 
     except Exception as e:
         return {"error": str(e)}
 
-@app.post("/scan-virus")
-def scan_virus(file_path: dict):
+@router.post("/scan-virus")
+async def scan_virus(file_path: str = Form(...)):
     if "file_path" not in file_path:
         raise HTTPException(status_code=422, detail="Missing 'file_path' key in request body")
     try:
@@ -264,22 +189,6 @@ def scan_virus(file_path: dict):
     except Exception as e:
         return {"error": str(e)}
 
-@app.get("/download/{file_id}")
-def download_file(file_id: str):
-    try:
-        # Placeholder logic for checking file status
-        file_status = "clean"  # Replace with actual logic to check file status
-
-        if file_status == "clean":
-            file_path = f"uploads/{file_id}"
-            return FileResponse(file_path, media_type="application/octet-stream", filename=file_id)
-        elif file_status == "infected":
-            return {"message": "File is quarantined due to virus detection", "file_id": file_id}
-        else:
-            raise HTTPException(status_code=404, detail="File not found")
-    except Exception as e:
-        return {"error": str(e)}
-
-@app.get("/")
+@router.get("/")
 def root():
     return {"message": "Backend is running"}
