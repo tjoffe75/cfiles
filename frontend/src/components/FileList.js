@@ -8,6 +8,9 @@ const FileList = ({ refreshKey }) => {
     const fetchFiles = async () => {
       try {
         const response = await fetch('http://localhost:8000/files/');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
         const data = await response.json();
         setFiles(data);
       } catch (error) {
@@ -16,26 +19,90 @@ const FileList = ({ refreshKey }) => {
       }
     };
 
-    fetchFiles(); // Fetch initially
+    fetchFiles();
 
-    const interval = setInterval(() => {
-      fetchFiles(); // And then fetch every 3 seconds
-    }, 3000);
+    let ws;
+    let connectInterval;
 
-    return () => clearInterval(interval); // Cleanup interval on component unmount
-  }, [refreshKey]); // Also re-run when refreshKey changes
+    const connect = () => {
+      ws = new WebSocket('ws://localhost:8000/ws/status');
+
+      ws.onopen = () => {
+        console.log('WebSocket connected');
+        setError(null); // Clear any previous error
+        // Clear reconnect interval on successful connection
+        if (connectInterval) {
+          clearInterval(connectInterval);
+          connectInterval = null;
+        }
+      };
+
+      ws.onmessage = (event) => {
+        if (event.data === 'ping') {
+          // This is a keep-alive message, ignore it.
+          return;
+        }
+        console.log('WebSocket message received:', event.data);
+        const message = JSON.parse(event.data);
+        setFiles(prevFiles =>
+          prevFiles.map(file => {
+            if (file.id === message.file_id) {
+              const updatedFile = {
+                ...file,
+                scan_status: message.status,
+                scan_details: message.details,
+              };
+              if (message.checksum) {
+                updatedFile.checksum = message.checksum;
+              }
+              return updatedFile;
+            }
+            return file;
+          })
+        );
+      };
+
+      ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setError('WebSocket connection error.');
+        ws.close(); // Close the connection on error to trigger onclose
+      };
+
+      ws.onclose = () => {
+        console.log('WebSocket disconnected. Attempting to reconnect...');
+        // Set up a reconnect interval if not already set
+        if (!connectInterval) {
+          connectInterval = setInterval(() => {
+            connect();
+          }, 3000); // Try to reconnect every 3 seconds
+        }
+      };
+    };
+
+    connect(); // Initial connection attempt
+
+    // Clean up the WebSocket connection and interval when the component unmounts
+    return () => {
+      if (ws) {
+        ws.close();
+      }
+      if (connectInterval) {
+        clearInterval(connectInterval);
+      }
+    };
+  }, [refreshKey]); // Re-run effect if refreshKey changes
 
   const getStatusClass = (status) => {
     switch (status) {
-      case 'CLEAN':
+      case 'clean':
         return 'status-clean';
-      case 'INFECTED':
+      case 'infected':
         return 'status-infected';
-      case 'SCANNING':
+      case 'scanning':
         return 'status-scanning';
-      case 'PENDING':
+      case 'pending':
         return 'status-pending';
-      case 'ERROR':
+      case 'error':
         return 'status-error';
       default:
         return '';
@@ -64,7 +131,7 @@ const FileList = ({ refreshKey }) => {
               </td>
               <td>{file.checksum}</td>
               <td>
-                {file.scan_status === 'CLEAN' && (
+                {file.scan_status === 'clean' && (
                   <a href={`http://localhost:8000/download/${file.id}`} download>
                     Download
                   </a>
