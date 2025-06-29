@@ -15,7 +15,6 @@ env/
 venv/
 .venv/
 ENV/
-.env
 
 # Celery
 celerybeat-schedule
@@ -35,7 +34,6 @@ Thumbs.db
 docker-compose.override.yml
 
 # Miljövariabler
-.env
 .env.local
 .env.*.local
 
