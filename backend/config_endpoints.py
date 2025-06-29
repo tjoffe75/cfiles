@@ -1,52 +1,67 @@
-from fastapi import APIRouter, HTTPException, UploadFile, Form, File, Depends, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
-from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional, List
-import pika
-import json
 import os
 import shutil
-import logging
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
+import pika
 from datetime import datetime
+from typing import List
 import asyncio
+from datetime import datetime, timedelta
 
-import schemas
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+from sqlalchemy.orm import Session
+from database.database import get_db
 from database import models
-from database.database import SessionLocal
 from enums import ScanStatus
+from schemas import File as FileResponse, FileUpdate, ScanStatusUpdate, FileUploadResponse, SystemSetting, SystemSettingUpdate
+import logging
+import json
 
-router = APIRouter()
+# Add a logger for this module
+logger = logging.getLogger(__name__)
 
 class ConnectionManager:
     def __init__(self):
-        self.active_connections: list[WebSocket] = []
+        # Store websockets and their last pong time
+        self.active_connections: dict[WebSocket, datetime] = {}
 
     async def connect(self, websocket: WebSocket):
         await websocket.accept()
-        self.active_connections.append(websocket)
+        # Initialize with the current time, assuming the connection is healthy
+        self.active_connections[websocket] = datetime.utcnow()
+        logger.info(f"New WebSocket connection: {websocket.client}. Total connections: {len(self.active_connections)}")
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            del self.active_connections[websocket]
+            logger.info(f"WebSocket disconnected: {websocket.client}. Total connections: {len(self.active_connections)}")
+
+    def update_last_pong(self, websocket: WebSocket):
+        """Updates the timestamp for a given websocket when a pong is received."""
+        if websocket in self.active_connections:
+            self.active_connections[websocket] = datetime.utcnow()
+            logger.debug(f"Pong received from {websocket.client}")
 
     async def broadcast(self, message: str):
-        for connection in self.active_connections:
-            await connection.send_text(message)
+        # Create a list of connections to iterate over, to avoid issues with disconnections during broadcast
+        for connection in list(self.active_connections.keys()):
+            try:
+                await connection.send_text(message)
+            except WebSocketDisconnect:
+                self.disconnect(connection)
+            except Exception as e:
+                logger.error(f"Error sending message to {connection.client}: {e}")
+                self.disconnect(connection)
 
 manager = ConnectionManager()
+status_manager = ConnectionManager() # Manager for status updates
 
-# Dependency to get the database session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# In-memory cache for the last known status of each file
+file_status_cache = {}
+
+router = APIRouter()
 
 UPLOAD_DIR = "/uploads"
 
-@router.post("/upload/", response_model=schemas.FileUploadResponse)
+@router.post("/upload/", response_model=FileUploadResponse)
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR)
@@ -115,30 +130,43 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         db.commit()
         raise HTTPException(status_code=500, detail=f"Could not publish message to RabbitMQ: {e}")
 
-@router.websocket("/ws/status")
+@router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
-    client_id = f"{websocket.client.host}:{websocket.client.port}"
-    logging.info(f"Connection open for {client_id}")
     try:
         while True:
-            await websocket.send_text("ping") # Send a ping to keep connection alive
-            await asyncio.sleep(15) # every 15 seconds
+            # Keep the connection alive
+            await websocket.receive_text()
     except WebSocketDisconnect:
-        logging.info(f"Client {client_id} disconnected.")
-    except Exception as e:
-        logging.error(f"Error in WebSocket for {client_id}: {e}")
-    finally:
         manager.disconnect(websocket)
-        logging.info(f"Connection with {client_id} closed and cleaned up.")
+        logging.info("Client disconnected from /ws.")
 
-@router.get("/files/", response_model=List[schemas.File])
-def get_files(db: Session = Depends(get_db)):
-    files = db.query(models.File).order_by(models.File.upload_date.desc()).all()
+@router.websocket("/ws/status")
+async def websocket_status_endpoint(websocket: WebSocket):
+    await status_manager.connect(websocket)
+    try:
+        while True:
+            # Wait for messages from the client (e.g., pong responses)
+            data = await websocket.receive_text()
+            logger.debug(f"Received message from {websocket.client}: {data}")
+            if data == '{"type":"pong"}':
+                status_manager.update_last_pong(websocket)
+
+    except WebSocketDisconnect:
+        status_manager.disconnect(websocket)
+        logger.info(f"Client {websocket.client} disconnected from status endpoint.")
+    except Exception as e:
+        logger.error(f"An error occurred in the status websocket for {websocket.client}: {e}")
+        status_manager.disconnect(websocket)
+
+
+@router.get("/files/", response_model=List[FileResponse])
+def get_files(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    files = db.query(models.File).order_by(models.File.upload_date.desc()).offset(skip).limit(limit).all()
     return files
 
-@router.get("/files/{file_id}", response_model=schemas.File)
-def get_file(file_id: int, db: Session = Depends(get_db)):
+@router.get("/files/{file_id}", response_model=FileResponse)
+async def get_file(file_id: int, db: Session = Depends(get_db)):
     file = db.query(models.File).filter(models.File.id == file_id).first()
     if not file:
         raise HTTPException(status_code=404, detail="File not found")
@@ -151,7 +179,7 @@ async def download_file(file_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="File not found")
 
     # Only allow download if the scan status is 'clean'
-    if db_file.scan_status != ScanStatus.CLEAN.value:
+    if db_file.scan_status != ScanStatus.CLEAN:
         raise HTTPException(status_code=403, detail=f"File cannot be downloaded. Status: {db_file.scan_status}")
 
     return FileResponse(db_file.filepath, media_type="application/octet-stream", filename=db_file.filename)
@@ -181,13 +209,13 @@ def get_infected_files_count(db: Session = Depends(get_db)):
     count = db.query(models.File).filter(models.File.status == models.ScanStatus.INFECTED).count()
     return count
 
-@router.get("/config/system-settings", response_model=List[schemas.SystemSetting])
+@router.get("/config/system-settings", response_model=List[SystemSetting])
 def get_system_settings(db: Session = Depends(get_db)):
     settings = db.query(models.SystemSetting).all()
     return settings
 
-@router.put("/config/system-settings/{setting_id}", response_model=schemas.SystemSetting)
-def update_system_setting(setting_id: int, setting: schemas.SystemSettingUpdate, db: Session = Depends(get_db)):
+@router.put("/config/system-settings/{setting_id}", response_model=SystemSetting)
+def update_system_setting(setting_id: int, setting: SystemSettingUpdate, db: Session = Depends(get_db)):
     db_setting = db.query(models.SystemSetting).filter(models.SystemSetting.id == setting_id).first()
     if not db_setting:
         raise HTTPException(status_code=404, detail="Setting not found")

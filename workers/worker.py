@@ -116,8 +116,8 @@ def is_maintenance_mode_active(db: Session) -> bool:
 
 def connect_to_rabbitmq():
     """Establishes a connection to RabbitMQ with retries."""
-    rabbitmq_user = os.getenv("RABBITMQ_DEFAULT_USER")
-    rabbitmq_password = os.getenv("RABBITMQ_DEFAULT_PASS")
+    rabbitmq_user = os.getenv("RABBITMQ_DEFAULT_USER", "guest")
+    rabbitmq_password = os.getenv("RABBITMQ_DEFAULT_PASS", "guest")
     
     if not rabbitmq_user or not rabbitmq_password:
         logging.error("RabbitMQ user or password not set. Please check environment variables.")
@@ -145,18 +145,12 @@ def get_db():
     finally:
         db.close()
 
-def publish_status_update(file_id: int, status: str, details: str = None, checksum: str = None):
-    """Publishes a status update to RabbitMQ."""
+def publish_status_update(channel: pika.channel.Channel, file_id: int, status: str, details: str = None, checksum: str = None, new_path: str = None):
+    """Publishes a status update to RabbitMQ using an existing channel."""
     try:
-        rabbitmq_user = os.getenv("RABBITMQ_DEFAULT_USER", "guest")
-        rabbitmq_pass = os.getenv("RABBITMQ_DEFAULT_PASS", "guest")
-        credentials = pika.PlainCredentials(rabbitmq_user, rabbitmq_pass)
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='rabbitmq', credentials=credentials)
-        )
-        channel = connection.channel()
-        channel.queue_declare(queue='status_updates', durable=True)
         message = {'file_id': file_id, 'status': status, 'details': details, 'checksum': checksum}
+        if new_path:
+            message['filepath'] = new_path
         channel.basic_publish(
             exchange='',
             routing_key='status_updates',
@@ -164,10 +158,10 @@ def publish_status_update(file_id: int, status: str, details: str = None, checks
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
             ))
-        connection.close()
         logging.info(f"Published status update for file {file_id}: {status}")
     except Exception as e:
         logging.error(f"Failed to publish status update for file {file_id}: {e}")
+
 
 def main():
     logging.info("Worker started")
@@ -181,12 +175,18 @@ def main():
     try:
         channel = connection.channel()
         channel.queue_declare(queue='file_queue', durable=True)
+        # Also declare the queue we will be publishing to
+        channel.queue_declare(queue='status_updates', durable=True)
 
         def callback(ch, method, properties, body):
             nonlocal clamd_socket
             db = SessionLocal()
             try:
-                process_message(db, body, clamd_socket)
+                # Pass the channel 'ch' to process_message for publishing
+                # Pass clamd_socket as a mutable list to allow modification on reconnect
+                new_socket = process_message(db, body, [clamd_socket], ch)
+                if new_socket is not None:
+                    clamd_socket = new_socket
                 ch.basic_ack(delivery_tag=method.delivery_tag)
             except MessageProcessingError as e:
                 logging.error(f"Message processing failed: {e}. Requeuing message.")
@@ -213,9 +213,11 @@ class MessageProcessingError(Exception):
     """Custom exception for message processing errors."""
     pass
 
-def process_message(db: Session, body: bytes, clamd_socket):
+def process_message(db: Session, body: bytes, clamd_socket_wrapper: list, channel: pika.channel.Channel):
     """Processes a single message from the queue."""
+    clamd_socket = clamd_socket_wrapper[0]
     file_id = None
+    checksum = None # Initialize checksum
     try:
         if is_maintenance_mode_active(db):
             logging.info("Maintenance mode is active. Re-queuing message.")
@@ -231,9 +233,13 @@ def process_message(db: Session, body: bytes, clamd_socket):
 
         logging.info(f"Received file: {file_path} with ID: {file_id}")
 
+        # Immediately publish 'pending' status
+        publish_status_update(channel, file_id, ScanStatus.PENDING.value, "Awaiting scan...")
+
         if not os.path.exists(file_path):
             logging.warning(f"File does not exist: {file_path}")
             update_scan_status(db, file_id, ScanStatus.ERROR, "File not found at worker")
+            publish_status_update(channel, file_id, ScanStatus.ERROR.value, "File not found at worker")
             return
 
         checksum = calculate_checksum(file_path)
@@ -241,11 +247,12 @@ def process_message(db: Session, body: bytes, clamd_socket):
             logging.warning(f"Could not calculate checksum for file {file_id}, continuing without it.")
 
         update_scan_status(db, file_id, ScanStatus.SCANNING, checksum=checksum)
-        publish_status_update(file_id, ScanStatus.SCANNING.value, checksum=checksum)
+        publish_status_update(channel, file_id, ScanStatus.SCANNING.value, checksum=checksum)
 
         if not clamd_socket:
             logging.error("No ClamAV connection, cannot scan.")
             update_scan_status(db, file_id, ScanStatus.ERROR, "Could not connect to ClamAV")
+            publish_status_update(channel, file_id, ScanStatus.ERROR.value, "Could not connect to ClamAV")
             raise MessageProcessingError("No ClamAV connection")
 
         try:
@@ -257,26 +264,32 @@ def process_message(db: Session, body: bytes, clamd_socket):
                 status, details = result[file_path]
                 if status == 'FOUND':
                     logging.info(f"File {file_id} is INFECTED. Moving to quarantine.")
-                    quarantine_file(db, file_id, file_path)
+                    new_filepath = quarantine_file(db, file_id, file_path)
                     update_scan_status(db, file_id, ScanStatus.INFECTED, details, checksum=checksum)
-                    publish_status_update(file_id, ScanStatus.INFECTED.value, details, checksum)
+                    publish_status_update(channel, file_id, ScanStatus.INFECTED.value, details, checksum, new_path=new_filepath)
                 else:  # OK
                     update_scan_status(db, file_id, ScanStatus.CLEAN, "File is clean", checksum=checksum)
-                    publish_status_update(file_id, ScanStatus.CLEAN.value, "File is clean", checksum)
+                    publish_status_update(channel, file_id, ScanStatus.CLEAN.value, "File is clean", checksum)
             else:
                 update_scan_status(db, file_id, ScanStatus.ERROR, "Scan failed or returned no result", checksum=checksum)
-                publish_status_update(file_id, ScanStatus.ERROR.value, "Scan failed or returned no result", checksum)
+                publish_status_update(channel, file_id, ScanStatus.ERROR.value, "Scan failed or returned no result", checksum)
 
         except clamd.ConnectionError as e:
             logging.error(f"ClamAV connection lost: {e}. Reconnecting...")
-            clamd_socket = connect_clamav() # Try to reconnect
+            new_clamd_socket = connect_clamav() # Try to reconnect
+            if new_clamd_socket:
+                clamd_socket_wrapper[0] = new_clamd_socket # Update the socket in the wrapper
+                logging.info("Successfully reconnected to ClamAV.")
+            else:
+                logging.error("Failed to reconnect to ClamAV.")
+
             update_scan_status(db, file_id, ScanStatus.ERROR, f"ClamAV connection error: {e}")
-            publish_status_update(file_id, ScanStatus.ERROR.value, f"ClamAV connection error: {e}", checksum)
+            publish_status_update(channel, file_id, ScanStatus.ERROR.value, f"ClamAV connection error: {e}", checksum)
             raise MessageProcessingError("ClamAV connection error")
         except Exception as e:
             logging.error(f"Error scanning file {file_path}: {e}")
             update_scan_status(db, file_id, ScanStatus.ERROR, str(e))
-            publish_status_update(file_id, ScanStatus.ERROR.value, str(e), checksum)
+            publish_status_update(channel, file_id, ScanStatus.ERROR.value, str(e), checksum)
 
     except json.JSONDecodeError:
         logging.error(f"Error decoding message body: {body}")
@@ -288,10 +301,12 @@ def process_message(db: Session, body: bytes, clamd_socket):
         if file_id:
             try:
                 update_scan_status(db, file_id, ScanStatus.ERROR, f"Unhandled worker error: {e}")
-                publish_status_update(file_id, ScanStatus.ERROR.value, f"Unhandled worker error: {e}", checksum)
+                publish_status_update(channel, file_id, ScanStatus.ERROR.value, f"Unhandled worker error: {e}", checksum)
             except Exception as db_e:
                 logging.error(f"Could not update DB to ERROR status after unhandled exception: {db_e}")
         # Do not requeue for unknown errors to avoid poison pills
+    return clamd_socket_wrapper[0] if clamd_socket_wrapper else None
 
 if __name__ == "__main__":
     main()
+docker-compose ps

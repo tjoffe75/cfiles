@@ -26,6 +26,13 @@ class FileUploadResponse(BaseModel):
     id: int
     status: str
 
+class FileUpdate(BaseModel):
+    filename: Optional[str] = None
+
+class ScanStatusUpdate(BaseModel):
+    scan_status: ScanStatus
+    scan_details: Optional[str] = None
+
 class QuarantineOut(BaseModel):
     quarantined_files: List[File]
 
