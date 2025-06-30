@@ -39,13 +39,14 @@ class QuarantineOut(BaseModel):
 class SystemSettingBase(BaseModel):
     key: str
     value: str
+    description: Optional[str] = None
+    extra: Optional[dict] = None
 
 class SystemSettingCreate(SystemSettingBase):
     pass
 
 class SystemSetting(SystemSettingBase):
     id: int
-
     model_config = ConfigDict(from_attributes=True)
 
 class SystemSettingUpdate(SystemSettingBase):

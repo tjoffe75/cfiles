@@ -1,42 +1,200 @@
 .admin-layout {
     display: flex;
+    min-height: 100vh;
+    height: 100vh;
+    width: 100vw;
+    background: #f8fafc;
 }
 
 .side-nav {
-    width: 250px;
-    padding: 20px;
-    background-color: #f4f4f4;
+    width: 230px;
+    min-width: 200px;
+    max-width: 260px;
     height: 100vh;
+    position: sticky;
+    top: 0;
+    left: 0;
+    background: linear-gradient(120deg, #e3e9f7 0%, #f4f4f4 100%);
+    border-right: 1.5px solid #d1d5db;
+    box-shadow: 2px 0 12px rgba(60,60,60,0.04);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    z-index: 10;
+    padding-top: 32px;
 }
 
 .side-nav h3 {
     margin-top: 0;
+    font-size: 1.3rem;
+    color: #3949ab;
+    font-weight: 800;
+    margin-bottom: 2.2rem;
+    letter-spacing: 0.5px;
+    padding-left: 10px;
 }
 
-.side-nav ul {
+.main-menu {
     list-style-type: none;
     padding: 0;
+    width: 100%;
 }
 
-.side-nav ul li {
+.main-menu > li {
     margin-bottom: 10px;
+    width: 100%;
 }
 
-.side-nav ul li a {
+.main-menu > li > a {
     text-decoration: none;
-    color: #333;
+    color: #263238;
+    font-size: 1.12rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    padding: 12px 18px;
+    border-radius: 7px;
+    transition: background 0.18s, color 0.18s;
+}
+
+.main-menu > li > a.active, .main-menu > li > a:hover {
+    background: #1976d2;
+    color: #fff;
+}
+
+.admin-submenu {
+    list-style-type: none;
+    padding-left: 18px;
+    margin-top: 6px;
+    margin-bottom: 0;
+}
+
+.admin-submenu li {
+    margin-bottom: 4px;
+}
+
+.admin-submenu a {
+    text-decoration: none;
+    color: #3949ab;
+    font-size: 1.01rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    padding: 7px 14px;
+    border-radius: 5px;
+    transition: background 0.18s, color 0.18s;
+}
+
+.admin-submenu a.active, .admin-submenu a:hover {
+    background: #e3e9f7;
+    color: #1976d2;
 }
 
 .admin-content {
-    flex-grow: 1;
-    padding: 20px;
+    flex: 1;
+    padding: 32px 40px;
+    background: #f8fafc;
+    min-height: 100vh;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+}
+
+.config-panel, .admin-dashboard-content {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    padding: 2.5rem 2.5rem 2rem 2.5rem;
+}
+
+.kpi-cards {
+    display: flex;
+    gap: 2rem;
+    margin-top: 2rem;
+    background: none;
+    box-shadow: none;
+    padding: 0;
+    width: 100%;
+    max-width: none;
+}
+
+.kpi-cards .card {
+    flex: 1 1 200px;
+    background: #e3e9f7;
+    border-radius: 10px;
+    padding: 1.5rem 1rem;
+    box-shadow: 0 2px 8px rgba(60,60,60,0.04);
+    text-align: center;
+}
+
+.kpi-cards .card h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    color: #3949ab;
+}
+
+.kpi-cards .card p {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #263238;
 }
 
 /* Dark mode styles */
 .dark-mode .side-nav {
-    background-color: #333;
+    background: #181c24;
+    border-right: 1.5px solid #23272f;
 }
 
 .dark-mode .side-nav ul li a {
-    color: #f4f4f4;
+    color: #b3c0d1;
+}
+
+.dark-mode .side-nav ul li a.active, .dark-mode .side-nav ul li a:hover {
+    background: #1976d2;
+    color: #fff;
+}
+
+.dark-mode .admin-content {
+    background: #181a20;
+}
+
+.dark-mode .config-panel, .dark-mode .admin-dashboard-content {
+    background: #23272f;
+    color: #e3e9f7;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.13);
+}
+
+.dark-mode .kpi-cards .card {
+    background: #23272f;
+    color: #e3e9f7;
+}
+
+@media (max-width: 900px) {
+    .admin-content {
+        padding: 16px 6px;
+    }
+    .side-nav {
+        width: 60px;
+        min-width: 60px;
+        padding: 10px 2px 2px 2px;
+    }
+    .side-nav h3 {
+        font-size: 1rem;
+        margin-bottom: 1rem;
+        padding-left: 0;
+    }
+    .main-menu > li > a {
+        font-size: 0.98rem;
+        padding: 8px 8px;
+    }
+    .admin-submenu {
+        padding-left: 8px;
+    }
+    .admin-submenu a {
+        font-size: 0.92rem;
+        padding: 5px 7px;
+    }
 }

@@ -8,6 +8,8 @@ import Dashboard from './components/admin/Dashboard';
 import LogViewer from './components/admin/LogViewer';
 import Quarantine from './components/admin/Quarantine';
 import ConfigPanel from './components/admin/ConfigPanel';
+import SSOBanner from './components/SSOBanner';
+import SideNav from './components/admin/SideNav';
 import './App.css';
 
 function App() {
@@ -134,8 +136,10 @@ function App() {
   useEffect(() => {
     if (isDarkMode) {
       document.body.classList.add('dark-mode');
+      document.documentElement.classList.add('dark-mode');
     } else {
       document.body.classList.remove('dark-mode');
+      document.documentElement.classList.remove('dark-mode');
     }
   }, [isDarkMode]);
 
@@ -160,33 +164,48 @@ function App() {
 
   return (
     <Router>
-      <nav className="main-navbar">
-        <span className="app-title">cfiles</span>
-        <Link to="/" className="nav-link">🏠 Home</Link>
-        <Link to="/admin/dashboard" className="nav-link">🛠️ Admin</Link>
-        <div className="navbar-spacer" />
-        <DarkModeToggle isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
-      </nav>
-      <div className={isDarkMode ? "App dark-mode" : "App"}>
-          <div className="header-container">
+      <SSOBanner />
+      <div className="app-with-sidenav">
+        <SideNav />
+        <div className="main-content-with-sidenav">
+          <nav className="main-navbar">
+            <div className="main-navbar-flex-row">
+              <div className="main-navbar-logo">
+                {/* Placeholder for logo upload, will be replaced by user-uploaded logo */}
+                <img src="/logo-placeholder.svg" alt="Logo" className="app-logo" />
+              </div>
+              <div className="main-navbar-center">
+                <span className="app-title" style={{fontSize: '2.5rem', fontWeight: 900, letterSpacing: '2px', color: '#1976d2', textTransform: 'uppercase'}}>
+                  cfiles
+                </span>
+              </div>
+              <div className="main-navbar-toggle">
+                <DarkModeToggle onChange={toggleDarkMode} isDarkMode={isDarkMode} />
+              </div>
+            </div>
+          </nav>
+          <div className={isDarkMode ? "App dark-mode" : "App"}>
+            <div className="header-container">
+            </div>
+            <main>
+              <Routes>
+                <Route path="/" element={
+                  <>
+                    <FileUpload onUploadSuccess={handleUploadSuccess} />
+                    <hr />
+                    <FileList files={files} error={error} />
+                  </>
+                } />
+                <Route path="/admin" element={<AdminLayout />}>
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="quarantine" element={<Quarantine />} />
+                  <Route path="logs" element={<LogViewer />} />
+                  <Route path="config" element={<ConfigPanel />} />
+                </Route>
+              </Routes>
+            </main>
           </div>
-        <main>
-          <Routes>
-            <Route path="/" element={
-              <>
-                <FileUpload onUploadSuccess={handleUploadSuccess} />
-                <hr />
-                <FileList files={files} error={error} />
-              </>
-            } />
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="quarantine" element={<Quarantine />} />
-              <Route path="logs" element={<LogViewer />} />
-              <Route path="config" element={<ConfigPanel />} />
-            </Route>
-          </Routes>
-        </main>
+        </div>
       </div>
     </Router>
   );

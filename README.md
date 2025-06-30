@@ -5,6 +5,18 @@ A robust application for secure file uploads, where each file is automatically s
 For a detailed project overview, see [PROJECT.md](PROJECT.md).
 For a deep dive into the technical implementation, see [ARCHITECTURE.md](ARCHITECTURE.md).
 
+---
+
+## Modern UI Features (2025)
+
+- Nytt modernt gränssnitt med centrerad titel och logotyp i vänstra hörnet.
+- Alltid synlig dark mode-toggle längst upp till höger.
+- SSO/RBAC-statusbanner alltid överst.
+- Snygg och responsiv sidomeny (SideNav).
+- Logotypen kan bytas ut genom att ersätta `frontend/public/logo-placeholder.svg`.
+
+---
+
 ## 1. Tech Stack
 
 *   **Backend**: FastAPI (Python)

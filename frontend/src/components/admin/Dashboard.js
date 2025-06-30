@@ -1,9 +1,8 @@
-
 import React from 'react';
 
 const Dashboard = () => {
     return (
-        <div>
+        <div className="admin-dashboard-content">
             <h2>Admin Dashboard</h2>
             <p>Welcome to the admin dashboard. System overview will be displayed here.</p>
             {/* Placeholder for KPI cards */}
