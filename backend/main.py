@@ -21,6 +21,10 @@ from typing import List
 from datetime import datetime, timedelta
 import schemas
 
+# Skapa nödvändiga mappar automatiskt
+for folder in ["uploads", "quarantine", "testfiles"]:
+    os.makedirs(folder, exist_ok=True)
+
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

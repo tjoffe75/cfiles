@@ -15,6 +15,10 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 QUARANTINE_DIR = "/quarantine"
 
+# Skapa nödvändiga mappar automatiskt
+for folder in ["uploads", "quarantine", "testfiles"]:
+    os.makedirs(folder, exist_ok=True)
+
 def calculate_checksum(file_path):
     """Calculates the SHA256 checksum of a file."""
     sha256_hash = hashlib.sha256()
@@ -309,4 +313,3 @@ def process_message(db: Session, body: bytes, clamd_socket_wrapper: list, channe
 
 if __name__ == "__main__":
     main()
-docker-compose ps
