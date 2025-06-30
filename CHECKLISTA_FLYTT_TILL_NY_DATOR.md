@@ -1,110 +1,65 @@
-# Checklista: Flytta och starta Filesapp på ny dator (Windows)
+# Checklist: Move and Start Filesapp on a New Computer (Windows)
 
-> **Nyhet 2025:**
-> - Gränssnittet är nu modernt och responsivt med centrerad titel och logotyp i vänstra hörnet.
-> - Dark mode-toggle är alltid synlig i top-baren.
-> - Logotypen kan bytas ut genom att ersätta `frontend/public/logo-placeholder.svg`.
+> **Update 2025:**
+> - The interface is now modern and responsive with a centered title and logo in the top left corner.
+> - The dark mode toggle is always visible in the top bar.
+> - The logo can be replaced by changing `frontend/public/logo-placeholder.svg`.
 
-1. **Installera förutsättningar**
+1. **Install prerequisites**
    - [Git](https://git-scm.com/download/win)
    - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
-   - (Valfritt) [Node.js LTS](https://nodejs.org/) om du vill köra frontend utanför Docker
+   - (Optional) [Node.js LTS](https://nodejs.org/) if you want to run the frontend outside Docker
 
-2. **Klona repot från GitHub**
+2. **Clone the repository from GitHub**
    ```powershell
    git clone <repo-url>
    cd cfiles
    ```
 
-3. **Skapa miljövariabler automatiskt**
+3. **Automatically create environment variables**
    ```powershell
    ./init_env.ps1
    ```
-   - Scriptet skapar `.env` och `frontend\.env` med slumpade RabbitMQ-värden om de inte redan finns.
-   - Öppna `.env` och `frontend\.env` i valfri editor om du vill ändra något.
+   - The script creates `.env` and `frontend\.env` with random RabbitMQ values if they don't already exist.
+   - Open `.env` and `frontend\.env` in any editor if you want to change something.
 
-4. **Bygg och starta med Docker**
+4. **Build and start with Docker**
    ```powershell
    docker compose build
    docker compose up -d
    ```
-   - Kontrollera att `pyjwt` är med i `backend/requirements.txt` (ska redan vara tillagt).
-   - Om du lagt till nya Python-paket (t.ex. `pyjwt`):
+   - Make sure `pyjwt` is included in `backend/requirements.txt` (should already be added).
+   - If you have added new Python packages (e.g. `pyjwt`):
      ```powershell
      docker compose build backend
      docker compose up -d backend
      ```
-   - Detta säkerställer att backend har alla nya beroenden.
+   - This ensures the backend has all new dependencies.
 
-5. **Verifiera att allt fungerar**
-   - Kolla loggar vid behov:
+5. **Verify that everything works**
+   - Check logs if needed:
      ```powershell
      docker compose logs
      ```
-   - Öppna i webbläsare:
+   - Open in your browser:
      - Backend: http://localhost:8000/docs
      - Frontend: http://localhost:3000
 
-6. **(Endast om du vill köra frontend utanför Docker)**
+6. **(Only if you want to run the frontend outside Docker)**
    ```powershell
    cd frontend
    npm install
    npm start
    ```
 
-7. **Testa filuppladdning och scanning**
-   - Ladda upp en fil via frontend och kontrollera att status uppdateras.
+7. **Test file upload and scanning**
+   - Upload a file via the frontend and check that the status updates.
 
-8. **Läs README.md för mer info och felsökningstips**
-
----
-
-## Starta om från en helt ren app
-
-Om du vill börja om från början och rensa bort alla filer, databaser och containrar:
-
-1. **Stoppa och ta bort alla Docker-containrar**
-   ```powershell
-   docker compose down
-   ```
-2. **Ta bort alla genererade mappar och filer**
-   ```powershell
-   Remove-Item -Recurse -Force .\uploads, .\quarantine, .\testfiles, .env, .\frontend\.env
-   ```
-   (eller radera dem manuellt i Utforskaren)
-3. **Ta bort extra filer i projektmappen**
-   - Kontrollera om det finns oönskade filer som t.ex. `.zip`-arkiv eller gamla backup-filer i projektmappen och ta bort dem.
-   - Exempel för att ta bort alla zip-filer:
-     ```powershell
-     Remove-Item -Force .\*.zip
-     ```
-   - Kontrollera även manuellt i Utforskaren att inga extra filer ligger kvar.
-4. **Ta bort Docker-volymer (t.ex. för Postgres-data)**
-   ```powershell
-   docker volume rm filesapp_postgres-data
-   ```
-   (eller kör `docker volume ls` och ta bort rätt volym)
-5. **Skapa nya miljövariabler**
-   ```powershell
-   ./init_env.ps1
-   ```
-6. **Bygg och starta om allt**
-   ```powershell
-   docker compose build
-   docker compose up -d
-   ```
-7. **(Valfritt) Installera frontend-beroenden om du kör utanför Docker**
-   ```powershell
-   cd frontend
-   npm install
-   npm start
-   ```
-
-Nu har du en helt ren app – inga gamla filer, ingen gammal databas, och alla miljövariabler är nyskapade!
+8. **Read README.md for more info and troubleshooting tips**
 
 ---
 
-## How to reset the app to a completely clean state (English)
+## Reset to a completely clean app
 
 If you want to start over and remove all files, databases, and containers:
 
@@ -149,10 +104,10 @@ Now you have a completely clean app – no old files, no old database, and all e
 
 ---
 
-> **Viktigt om filhantering och Docker:**
+> **Important about file handling and Docker:**
 > 
-> Alla filer som laddas upp eller hanteras av appen sparas i mapparna `uploads`, `quarantine` och `testfiles` i projektmappen. Dessa mappar är mappade direkt till containrarna via `docker-compose.yml` (t.ex. `./uploads:/uploads`).
+> All files uploaded or handled by the app are stored in the `uploads`, `quarantine`, and `testfiles` folders in the project directory. These folders are mapped directly to the containers via `docker-compose.yml` (e.g. `./uploads:/uploads`).
 > 
-> Det betyder att filerna alltid lagras på din dator och inte i containerns interna lagring. På så sätt riskerar du inte att containern blir full, och du kan enkelt säkerhetskopiera eller flytta filerna vid behov.
+> This means the files are always stored on your computer and not in the container's internal storage. This way, you don't risk the container filling up, and you can easily back up or move the files if needed.
 > 
-> Om du vill ändra var filerna lagras, justera mappningen i `docker-compose.yml`.
+> If you want to change where the files are stored, adjust the mapping in `docker-compose.yml`.
