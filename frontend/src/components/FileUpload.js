@@ -37,7 +37,7 @@ const FileUpload = ({ onUploadSuccess }) => {
       document.querySelector('input[type="file"]').value = '';
       setSelectedFile(null);
       if (onUploadSuccess) {
-        onUploadSuccess(); // Notify parent component to refresh file list
+        onUploadSuccess(result); // Skicka upp filobjektet till App.js
       }
     } catch (error) {
       setMessage(`Error: ${error.message}`);

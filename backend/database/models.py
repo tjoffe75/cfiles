@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, JSON
 from sqlalchemy.sql import func
 from .database import Base
 from enums import ScanStatus
@@ -22,4 +22,7 @@ class SystemSetting(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     key = Column(String, unique=True, index=True, nullable=False)
-    value = Column(Boolean, default=False, nullable=False)
+    value = Column(String, nullable=False)  # Ändrat till sträng för att stödja olika typer
+    description = Column(String, nullable=True)
+    # För framtida komplexa inställningar (t.ex. AD-konfig):
+    extra = Column(JSON, nullable=True)

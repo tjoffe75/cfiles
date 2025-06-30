@@ -49,6 +49,7 @@ Systemet består av följande container-baserade tjänster som definieras i `doc
 
 *   **Frontend (React)**
     *   **Ansvar**: Tillhandahåller ett webbaserat användargränssnitt (UI) för att ladda upp filer och visa en lista med deras skanningsstatus i realtid.
+    *   **UI/UX (2025):** Modernt, responsivt gränssnitt med centrerad titel, logotyp i vänstra hörnet och alltid synlig dark mode-toggle.
     *   **Interaktioner**: Kommunicerar med Backend API:et via HTTP-anrop.
     *   **Framtid**: Kommer att byggas ut med en adminpanel för konfiguration och hantering av karantän.
 

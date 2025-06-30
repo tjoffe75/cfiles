@@ -6,7 +6,7 @@ from typing import List
 import asyncio
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Security, status
 from sqlalchemy.orm import Session
 from database.database import get_db
 from database import models
@@ -14,9 +14,44 @@ from enums import ScanStatus
 from schemas import File as FileResponse, FileUpdate, ScanStatusUpdate, FileUploadResponse, SystemSetting, SystemSettingUpdate
 import logging
 import json
+from sqlalchemy.exc import IntegrityError
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import jwt as pyjwt
 
 # Add a logger for this module
 logger = logging.getLogger(__name__)
+
+security = HTTPBearer()
+
+# Dummy public key för JWT-validering (ersätt med riktig i produktion)
+DUMMY_PUBLIC_KEY = "your-public-key"
+
+# Dependency: Kontrollera SSO/RBAC och roll
+
+def get_current_user(role: str = "user"):
+    def dependency(credentials: HTTPAuthorizationCredentials = Security(security), db: Session = Depends(get_db)):
+        sso_config = get_sso_rbac_config(db)
+        if not sso_config["enabled"]:
+            # Dev-läge: tillåt alla, returnera dummy-user
+            return {"username": "devuser", "roles": ["admin", "user"], "dev_mode": True}
+        # SSO/RBAC på: kontrollera JWT och grupp
+        try:
+            payload = pyjwt.decode(credentials.credentials, DUMMY_PUBLIC_KEY, algorithms=["RS256"], options={"verify_signature": False})
+            username = payload.get("preferred_username") or payload.get("sub")
+            groups = payload.get("groups", [])
+            if not username or not groups:
+                raise HTTPException(status_code=401, detail="Invalid token")
+            # Kontrollera roll
+            if role == "admin":
+                if sso_config["ad_group_admins"] not in groups:
+                    raise HTTPException(status_code=403, detail="Admin access required")
+            elif role == "user":
+                if sso_config["ad_group_users"] not in groups and sso_config["ad_group_admins"] not in groups:
+                    raise HTTPException(status_code=403, detail="User access required")
+            return {"username": username, "roles": groups, "dev_mode": False}
+        except Exception as e:
+            raise HTTPException(status_code=401, detail=f"Auth failed: {e}")
+    return dependency
 
 class ConnectionManager:
     def __init__(self):
@@ -253,6 +288,49 @@ async def scan_virus(file_path: str = Form(...)):
         return {"message": "File sent for virus scanning", "file_path": file_path["file_path"]}
     except Exception as e:
         return {"error": str(e)}
+
+# Utility: Hämta SSO/RBAC-status och config
+
+def get_sso_rbac_config(db):
+    settings = {s.key: s for s in db.query(models.SystemSetting).all()}
+    enabled = settings.get("RBAC_SSO_ENABLED", None)
+    if enabled and enabled.value == "true":
+        return {
+            "enabled": True,
+            "ad_endpoint": settings.get("AD_ENDPOINT", None).value if settings.get("AD_ENDPOINT") else None,
+            "ad_client_id": settings.get("AD_CLIENT_ID", None).value if settings.get("AD_CLIENT_ID") else None,
+            "ad_client_secret": settings.get("AD_CLIENT_SECRET", None).value if settings.get("AD_CLIENT_SECRET") else None,
+            "ad_group_users": settings.get("AD_GROUP_USERS", None).value if settings.get("AD_GROUP_USERS") else "users",
+            "ad_group_admins": settings.get("AD_GROUP_ADMINS", None).value if settings.get("AD_GROUP_ADMINS") else "admins",
+        }
+    return {"enabled": False}
+
+@router.post("/config/init-sso-settings")
+def init_sso_settings(db: Session = Depends(get_db)):
+    # Skapa default SSO/RBAC-inställningar om de saknas
+    defaults = [
+        {"key": "RBAC_SSO_ENABLED", "value": "false", "description": "Enable SSO/RBAC (true/false)"},
+        {"key": "AD_ENDPOINT", "value": "", "description": "AD/SSO endpoint (OpenID Connect)"},
+        {"key": "AD_CLIENT_ID", "value": "", "description": "AD/SSO client id"},
+        {"key": "AD_CLIENT_SECRET", "value": "", "description": "AD/SSO client secret"},
+        {"key": "AD_GROUP_USERS", "value": "users", "description": "AD group for normal users"},
+        {"key": "AD_GROUP_ADMINS", "value": "admins", "description": "AD group for admins"},
+    ]
+    created = []
+    for d in defaults:
+        if not db.query(models.SystemSetting).filter_by(key=d["key"]).first():
+            s = models.SystemSetting(**d)
+            db.add(s)
+            created.append(d["key"])
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+    return {"created": created}
+
+@router.get("/config/sso-status")
+def get_sso_status(db: Session = Depends(get_db)):
+    return get_sso_rbac_config(db)
 
 @router.get("/")
 def root():

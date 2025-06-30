@@ -22,6 +22,11 @@ Applikationens primära syfte är att erbjuda en robust och säker plattform fö
 
 Projektet har ett fungerande end-to-end-flöde för säker filuppladdning, asynkron virusskanning och hantering av infekterade filer. En adminpanel har implementerats för att ge administratörer insyn och kontroll över systemet.
 
+**UI/UX (2025):**
+*   Modernt, responsivt gränssnitt med centrerad titel och logotyp i vänstra hörnet.
+*   Dark mode-toggle alltid synlig i top-baren.
+*   Logotypen kan bytas ut genom att ersätta `frontend/public/logo-placeholder.svg`.
+
 **Vad som är implementerat och fungerar:**
 *   **Backend API (`/config/upload/`)**: Tar emot filuppladdningar och sparar filinformation i databasen med status `PENDING`.
 *   **Asynkron bearbetning**: Meddelanden publiceras till RabbitMQ för att initiera skanningsjobb.

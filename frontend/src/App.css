@@ -53,6 +53,124 @@ hr {
   margin: 2rem 0;
 }
 
+/* --- GLOBAL LAYOUT FOR SIDENAV --- */
+.app-with-sidenav {
+  display: flex;
+  min-height: 100vh;
+  width: 100vw;
+  background: #f8fafc;
+}
+
+/* SideNav should be fixed and always visible */
+.side-nav {
+  width: 230px;
+  min-width: 200px;
+  max-width: 260px;
+  height: calc(100vh - 120px); /* minus SSO-banner + navbar */
+  position: fixed;
+  top: 120px; /* SSO-banner (56px) + navbar (64px) */
+  left: 0;
+  background: linear-gradient(120deg, #e3e9f7 0%, #f4f4f4 100%);
+  border-right: 1.5px solid #d1d5db;
+  box-shadow: 2px 0 12px rgba(60,60,60,0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  z-index: 10;
+  padding-top: 32px;
+}
+
+/* Main content should have left margin to not be under SideNav */
+.main-content-with-sidenav {
+  flex: 1;
+  margin-left: 230px;
+  min-height: 100vh;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (max-width: 900px) {
+  .side-nav {
+    width: 56px;
+    min-width: 56px;
+    max-width: 56px;
+    top: 120px;
+    height: calc(100vh - 120px);
+    padding-top: 10px;
+    align-items: center;
+  }
+  .main-content-with-sidenav {
+    margin-left: 60px;
+  }
+}
+
+/* Adjust main-navbar to be full width and not overlap SideNav */
+.main-navbar {
+  position: fixed;
+  top: 56px;
+  left: 0;
+  width: 100vw;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  background: #23272f;
+  color: #fff;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 2px 12px rgba(44,62,80,0.10);
+  padding: 0 32px;
+  margin-bottom: 18px;
+}
+
+.main-navbar-flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  justify-content: center;
+  position: relative;
+  height: 100%;
+}
+
+.main-navbar-center {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  margin: 0 auto;
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.main-navbar-toggle {
+  margin-left: auto;
+  position: absolute;
+  right: 80px; /* Move toggle further left for visibility */
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .main-navbar {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .darkmode-btn {
+    right: 8px;
+  }
+  .main-navbar-toggle {
+    right: 40px; /* Also move left on small screens */
+  }
+  .main-navbar-center {
+    gap: 8px;
+  }
+}
+
 /* FileUpload Component */
 .file-upload {
   background-color: #ffffff;
@@ -209,9 +327,245 @@ hr {
 }
 
 .app-title {
-  font-size: 1.3rem;
-  font-weight: bold;
-  color: #fff;
-  margin-right: 2rem;
+  font-size: 2.5rem;
+  font-weight: 900;
+  letter-spacing: 2px;
+  color: #1976d2;
+  text-transform: uppercase;
+  font-family: 'Segoe UI', 'Montserrat', 'Roboto', Arial, sans-serif;
+  line-height: 1.1;
+  margin: 0;
+  padding: 0 12px;
+  text-shadow: 0 2px 8px rgba(25, 118, 210, 0.08);
+}
+
+@media (max-width: 900px) {
+  .app-title {
+    font-size: 1.6rem;
+    padding: 0 4px;
+  }
+}
+
+/* --- Responsive SideNav --- */
+@media (max-width: 900px) {
+  .side-nav {
+    width: 56px;
+    min-width: 56px;
+    max-width: 56px;
+    top: 120px;
+    height: calc(100vh - 120px);
+    padding-top: 10px;
+    align-items: center;
+  }
+  .side-nav h3 {
+    font-size: 0.9rem;
+    padding-left: 0;
+    text-align: center;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    margin-bottom: 1rem;
+  }
+  .main-menu > li > a, .admin-submenu a {
+    font-size: 0.9rem;
+    padding: 8px 6px;
+    justify-content: center;
+    text-align: center;
+  }
+  .admin-submenu {
+    padding-left: 0;
+  }
+  .main-content-with-sidenav, .main-navbar {
+    margin-left: 56px;
+  }
+  .side-nav ul, .side-nav .admin-submenu {
+    padding-left: 0;
+  }
+  .side-nav .main-menu > li > a span, .side-nav .admin-submenu a span {
+    display: none;
+  }
+}
+
+/* --- SideNav modern look --- */
+.side-nav {
+  box-shadow: 2px 0 12px rgba(60,60,60,0.08);
+  border-radius: 0 16px 16px 0;
+}
+.side-nav h3 {
   letter-spacing: 1px;
+  font-weight: 900;
+  margin-bottom: 2.5rem;
+}
+.main-menu > li > a {
+  gap: 8px;
+  font-size: 1.13rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.admin-submenu a {
+  gap: 6px;
+  font-size: 1.01rem;
+  font-weight: 500;
+  opacity: 0.92;
+}
+
+/* SideNav dark mode */
+body.dark-mode .side-nav {
+  background: linear-gradient(120deg, #23272f 0%, #181c1f 100%);
+  border-right: 1.5px solid #23272f;
+}
+body.dark-mode .side-nav h3 {
+  color: #90caf9;
+}
+body.dark-mode .main-menu > li > a {
+  color: #e0e0e0;
+}
+body.dark-mode .main-menu > li > a.active, body.dark-mode .main-menu > li > a:hover {
+  background: #1976d2;
+  color: #fff;
+}
+body.dark-mode .admin-submenu a {
+  color: #90caf9;
+}
+body.dark-mode .admin-submenu a.active, body.dark-mode .admin-submenu a:hover {
+  background: #23272f;
+  color: #1976d2;
+}
+
+/* --- DARK MODE OVERRIDES FOR ALL VITA DELAR --- */
+body.dark-mode .side-nav {
+  background: linear-gradient(120deg, #23272f 0%, #181c1f 100%);
+  border-right: 1.5px solid #23272f;
+}
+body.dark-mode .side-nav h3 {
+  color: #90caf9;
+}
+body.dark-mode .main-menu > li > a {
+  color: #e0e0e0;
+}
+body.dark-mode .main-menu > li > a.active, body.dark-mode .main-menu > li > a:hover {
+  background: #1976d2;
+  color: #fff;
+}
+body.dark-mode .admin-submenu a {
+  color: #90caf9;
+}
+body.dark-mode .admin-submenu a.active, body.dark-mode .admin-submenu a:hover {
+  background: #23272f;
+  color: #1976d2;
+}
+
+body.dark-mode .App, body.dark-mode .main-content-with-sidenav {
+  background: #181c1f !important;
+  color: #e0e0e0;
+}
+
+body.dark-mode .app-title {
+  color: #90caf9;
+}
+
+body.dark-mode .file-upload,
+body.dark-mode .file-list table,
+body.dark-mode .config-panel,
+body.dark-mode .admin-dashboard-content,
+body.dark-mode .admin-content {
+  background: #23272f !important;
+  color: #e0e0e0;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.18);
+}
+
+body.dark-mode .file-list th {
+  background-color: #23272f !important;
+  color: #90caf9;
+}
+body.dark-mode .file-list td {
+  background-color: #23272f !important;
+  color: #e0e0e0;
+}
+
+body.dark-mode hr {
+  background-image: linear-gradient(to right, rgba(0,0,0,0), #444, rgba(0,0,0,0));
+}
+
+body.dark-mode .side-nav {
+  box-shadow: 2px 0 12px rgba(0,0,0,0.18);
+}
+
+body.dark-mode .main-navbar {
+  background: #23272f;
+  color: #e0e0e0;
+  border-bottom: 1px solid #23272f;
+}
+
+body.dark-mode .header-container {
+  background-color: #23272f;
+  color: #e0e0e0;
+}
+
+.sso-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 201;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #e3f2fd;
+  color: #1565c0;
+  border-radius: 0 0 12px 12px;
+  padding: 12px 20px;
+  font-size: 1.08rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(21,101,192,0.07);
+}
+body.dark-mode .sso-banner {
+  background: #1a237e;
+  color: #bbdefb;
+  box-shadow: 0 2px 8px rgba(21,101,192,0.13);
+}
+.sso-banner .sso-icon {
+  font-size: 1.4em;
+}
+
+/* Justera main-content så den inte hamnar under banners */
+.app-with-sidenav {
+  padding-top: 120px; /* SSO-banner + navbar */
+}
+@media (max-width: 900px) {
+  .main-navbar, .sso-banner {
+    padding-left: 0;
+    padding-right: 0;
+  }
+  .app-with-sidenav {
+    padding-top: 120px;
+  }
+}
+
+.main-navbar-logo {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  padding-left: 24px;
+  z-index: 2;
+}
+
+.app-logo {
+  height: 40px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(25, 118, 210, 0.08));
+}
+
+@media (max-width: 900px) {
+  .main-navbar-logo {
+    padding-left: 8px;
+  }
+  .app-logo {
+    height: 28px;
+    max-width: 70px;
+  }
 }
