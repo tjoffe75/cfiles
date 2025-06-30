@@ -152,3 +152,66 @@ hr {
 .error-message {
   color: #e74c3c;
 }
+
+.main-navbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1.5rem;
+  background: #2c3e50;
+  padding: 1rem 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.navbar-spacer {
+  flex: 1;
+}
+.nav-link {
+  color: #fff;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 1.1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.nav-link:hover, .nav-link.active {
+  background: #34495e;
+}
+
+.side-nav {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 12px rgba(44,62,80,0.08);
+  padding: 2rem 1.5rem;
+  min-width: 220px;
+}
+.admin-menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.admin-menu li {
+  margin-bottom: 1rem;
+}
+.admin-menu li a {
+  color: #2c3e50;
+  text-decoration: none;
+  font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+.admin-menu li a:hover, .admin-menu li a.active {
+  background: #f4f7f6;
+}
+
+.app-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #fff;
+  margin-right: 2rem;
+  letter-spacing: 1px;
+}

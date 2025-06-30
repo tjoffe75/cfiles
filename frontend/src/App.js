@@ -160,16 +160,15 @@ function App() {
 
   return (
     <Router>
-      <div className={`App ${isDarkMode ? 'dark-mode' : ''}`}>
+      <nav className="main-navbar">
+        <span className="app-title">cfiles</span>
+        <Link to="/" className="nav-link">🏠 Home</Link>
+        <Link to="/admin/dashboard" className="nav-link">🛠️ Admin</Link>
+        <div className="navbar-spacer" />
+        <DarkModeToggle isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+      </nav>
+      <div className={isDarkMode ? "App dark-mode" : "App"}>
           <div className="header-container">
-              <h1 className="title">cfiles</h1>
-              <div className="nav-links">
-                <Link to="/">Home</Link>
-                <Link to="/admin/dashboard">Admin</Link>
-              </div>
-              <div className="toggle-container">
-                  <DarkModeToggle onChange={toggleDarkMode} isDarkMode={isDarkMode} />
-              </div>
           </div>
         <main>
           <Routes>
