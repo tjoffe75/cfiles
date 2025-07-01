@@ -11,6 +11,7 @@ if (-Not (Test-Path ".env")) {
     Set-Content .env @"
 RABBITMQ_DEFAULT_USER=$user
 RABBITMQ_DEFAULT_PASS=$pass
+RABBITMQ_HOST=rabbitmq
 REACT_APP_WS_URL=$wsurl
 POSTGRES_USER=$pguser
 POSTGRES_PASSWORD=$pgpass

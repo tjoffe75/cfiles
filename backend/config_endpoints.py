@@ -94,15 +94,19 @@ file_status_cache = {}
 
 # --- Maintenance Mode Check Decorator ---
 from functools import wraps
+import inspect
 
 def require_not_maintenance_mode(endpoint_func):
     @wraps(endpoint_func)
-    def wrapper(*args, db: Session = Depends(get_db), **kwargs):
+    async def async_wrapper(*args, db: Session = Depends(get_db), **kwargs):
         setting = db.query(models.SystemSetting).filter_by(key="MAINTENANCE_MODE").first()
         if setting and setting.value == "true":
             raise HTTPException(status_code=503, detail="System is in maintenance mode.")
-        return endpoint_func(*args, db=db, **kwargs)
-    return wrapper
+        if inspect.iscoroutinefunction(endpoint_func):
+            return await endpoint_func(*args, db=db, **kwargs)
+        else:
+            return endpoint_func(*args, db=db, **kwargs)
+    return async_wrapper
 
 router = APIRouter()
 
@@ -155,9 +159,10 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
     try:
         rabbitmq_user = os.getenv("RABBITMQ_DEFAULT_USER", "guest")
         rabbitmq_pass = os.getenv("RABBITMQ_DEFAULT_PASS", "guest")
+        rabbitmq_host = os.getenv("RABBITMQ_HOST", "rabbitmq")
         credentials = pika.PlainCredentials(rabbitmq_user, rabbitmq_pass)
         connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host='rabbitmq', credentials=credentials)
+            pika.ConnectionParameters(host=rabbitmq_host, credentials=credentials)
         )
         channel = connection.channel()
         channel.queue_declare(queue='file_queue', durable=True)
