@@ -1,0 +1,37 @@
+.dropzone {
+  border: 2px dashed #aaa;
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+  background: #fafafa;
+  margin-bottom: 16px;
+  transition: background 0.2s, border 0.2s;
+  color: #222;
+  cursor: pointer;
+}
+.dropzone.active {
+  border: 2px solid #007bff;
+  background: #f0f8ff;
+}
+.upload-message {
+  margin-top: 12px;
+  font-size: 1rem;
+  color: #007bff;
+}
+
+/* Dark mode support */
+body.dark-mode .dropzone,
+.file-upload.dark-mode .dropzone {
+  background: #23272f;
+  color: #f1f1f1;
+  border-color: #444;
+}
+body.dark-mode .dropzone.active,
+.file-upload.dark-mode .dropzone.active {
+  background: #1a1d23;
+  border-color: #3399ff;
+}
+body.dark-mode .upload-message,
+.file-upload.dark-mode .upload-message {
+  color: #66bfff;
+}
