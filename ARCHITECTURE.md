@@ -175,6 +175,7 @@ Systemet ska kunna sättas i ett underhållsläge via en miljövariabel, t.ex. `
 
 *   **Syfte**: Att kunna stänga ner möjligheten för användare att ladda upp filer under planerade underhåll, uppdateringar eller vid felsökning av kritiska problem.
 *   **Effekt**:
+
     *   **Frontend**: Istället för uppladdningsgränssnittet visas en statisk sida med ett meddelande om att systemet är under underhåll och när det förväntas vara tillgängligt igen.
     *   **Backend**: `/upload`-ändpunkten och andra relevanta API-anrop returnerar en `503 Service Unavailable`-status med ett informativt meddelande.
     *   Adminpanelen kan fortfarande vara tillgänglig för administratörer för att de ska kunna hantera systemet under underhållsfönstret.
@@ -209,15 +210,16 @@ För att säkerställa säker kommunikation ska all extern trafik till applikati
 
 ## ⚙️ Adminpanel & Konfiguration (Implementerat)
 
-> **Notera:** Adminpanelens "⚙️ Configuration"-sektion är nu fullt funktionell. Administratörer kan ändra systeminställningar direkt via UI:t, inklusive att slå på/av SSO/RBAC (RBAC_SSO_ENABLED) och redigera relaterade inställningar. Alla ändringar valideras direkt i gränssnittet (inline validation), och panelen har full dark mode-stöd. Backend och databas hanterar automatiskt alla nödvändiga systeminställningar vid uppstart, vilket gör systemet robust och modulärt.
+> **Notera:** Adminpanelens "⚙️ Configuration"-sektion är nu fullt funktionell. Administratörer kan ändra systeminställningar direkt via UI:t, inklusive att slå på/av SSO/RBAC (RBAC_SSO_ENABLED), redigera SSO/AD-inställningar (med inline-validering), och toggla Maintenance Mode. Alla ändringar valideras direkt i gränssnittet, panelen har full dark mode-stöd och robust felhantering. Vid aktiverad RBAC/SSO krävs admin-behörighet (JWT-token) för att ändra kritiska inställningar.
 
 **Exempel på funktioner i konfigurationspanelen:**
 - Slå på/av SSO/RBAC (RBAC_SSO_ENABLED)
 - Redigera SSO/AD-inställningar (med inline-validering, t.ex. giltig URL, obligatoriska fält när SSO är aktivt)
 - Alla inställningar har stöd för dark mode
 - Felhantering och validering sker direkt i UI:t
+- Toggla Maintenance Mode (kräver admin vid RBAC/SSO)
 
-**Teknisk not:** Backend säkerställer automatiskt vid varje uppstart att alla nödvändiga systeminställningar (t.ex. `RBAC_SSO_ENABLED`) finns i databasen. Nya inställningar kan enkelt läggas till centralt och initieras automatiskt.
+**Teknisk not:** Backend säkerställer automatiskt vid varje uppstart att alla nödvändiga systeminställningar (t.ex. `RBAC_SSO_ENABLED`, `MAINTENANCE_MODE`) finns i databasen. Nya inställningar kan enkelt läggas till centralt och initieras automatiskt.
 
 *   **Maintenance Mode**: Möjlighet att stänga av systemet för underhåll.
 *   **SSO/RBAC**: Integration med Active Directory för rollbaserad åtkomst.
@@ -235,4 +237,4 @@ För att säkerställa säker kommunikation ska all extern trafik till applikati
 
 - Filuppladdning, scanning, statusuppdatering och karantän är fullt implementerat och testat.
 - Nedladdning av filer fungerar via både UI och API.
-- Status för filer uppdateras i realtid i användargränssnittet.
+

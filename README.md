@@ -78,4 +78,4 @@ docker compose exec backend ls /quarantine
 
 ## ⚙️ Adminpanel – Nuvarande läge
 
-> **Notera:** I nuläget är adminpanelens "⚙️ Configuration"-sektion endast informativ. Det finns inga knappar eller fält för att styra eller ändra appens inställningar via UI:t. All konfiguration sker utanför adminpanelen.
+> **Notera:** Adminpanelens "⚙️ Configuration"-sektion är nu fullt funktionell. Administratörer kan ändra systeminställningar direkt via UI:t, inklusive att slå på/av SSO/RBAC (RBAC_SSO_ENABLED), redigera SSO/AD-inställningar (med inline-validering), och toggla Maintenance Mode. Alla ändringar valideras direkt i gränssnittet, panelen har full dark mode-stöd och robust felhantering. Vid aktiverad RBAC/SSO krävs admin-behörighet (JWT-token) för att ändra kritiska inställningar.
