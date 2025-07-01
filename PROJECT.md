@@ -1,3 +1,39 @@
+# cfiles – Projektets riktlinjer
+
+## Grundläggande principer
+
+1. **Inget får gå sönder**
+   - Alla ändringar ska ta hänsyn till befintlig kod och funktionalitet.
+   - Existerande features ska alltid fortsätta fungera efter en ändring.
+
+2. **Modularitet**
+   - Koden ska vara modulär och uppdelad i tydliga, återanvändbara komponenter och funktioner.
+   - Undvik duplicering och hårdkodning.
+
+3. **Robusthet**
+   - All kod ska ha robust felhantering, särskilt för filhantering, autentisering och WebSocket.
+   - Systemet ska klara oväntade situationer utan att krascha eller ge dålig användarupplevelse.
+
+4. **Modern och lättanvänd UI**
+   - Frontend ska vara modern, tydlig och enkel att använda.
+   - UI-komponenter ska vara konsekventa och följa best practices.
+
+5. **Felhantering**
+   - Alla endpoints och UI-flöden ska ha tydlig och användarvänlig felhantering.
+   - Loggning ska finnas för felsökning, men inte störa användaren.
+
+6. **Utvecklarläge (dev mode) och fejkuser**
+   - När SSO/RBAC är avstängt (RBAC_SSO_ENABLED = false) används automatiskt en fejk-användare ("devuser") för alla API-anrop.
+   - "devuser" har rollerna ["admin", "user"] och kräver ingen Authorization-header.
+   - Detta gäller endast i utvecklingsläge och får inte påverka säkerheten i produktion.
+   - All fil- och folderhantering i dev mode kopplas till "devuser".
+
+7. **Följ projektets dokumentation**
+   - Följ alltid riktlinjer i `PROJECT.md`, `ARCHITECTURE.md` och annan dokumentation.
+   - Om du är osäker, läs in dessa filer innan du gör ändringar.
+
+---
+
 # 🚀 Projektvision – cfiles
 
 Detta dokument beskriver det övergripande syftet, den nuvarande statusen och den framtida visionen för **cfiles**-applikationen.
