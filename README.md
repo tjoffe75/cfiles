@@ -75,3 +75,7 @@ curl http://localhost:8000/config/files/
 ```bash
 docker compose exec backend ls /quarantine
 ```
+
+## ⚙️ Adminpanel – Nuvarande läge
+
+> **Notera:** I nuläget är adminpanelens "⚙️ Configuration"-sektion endast informativ. Det finns inga knappar eller fält för att styra eller ändra appens inställningar via UI:t. All konfiguration sker utanför adminpanelen.

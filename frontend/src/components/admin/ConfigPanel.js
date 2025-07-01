@@ -68,6 +68,24 @@ const ConfigPanel = () => {
         setSaving(false);
     };
 
+    const validateSetting = (setting, value) => {
+        if (setting.key === 'AD_ENDPOINT' && ssoEnabled) {
+            try {
+                if (!value) return 'Endpoint krävs när SSO är på.';
+                new URL(value);
+            } catch {
+                return 'Ogiltig URL.';
+            }
+        }
+        if ((setting.key === 'AD_CLIENT_ID' || setting.key === 'AD_CLIENT_SECRET') && ssoEnabled) {
+            if (!value) return 'Fältet krävs när SSO är på.';
+        }
+        if ((setting.key === 'AD_GROUP_USERS' || setting.key === 'AD_GROUP_ADMINS') && ssoEnabled) {
+            if (!value) return 'Gruppnamn krävs när SSO är på.';
+        }
+        return '';
+    };
+
     if (loading) return <div>Loading configuration...</div>;
     if (error) return <div className="error-message">{error}</div>;
 
@@ -82,9 +100,10 @@ const ConfigPanel = () => {
     return (
         <div className="config-panel">
             <h2>System Configuration</h2>
-            {!ssoStatus.enabled && (
+            {/* SSO/RBAC-banner visas endast när RBAC/SSO är avslaget */}
+            {!ssoEnabled && (
                 <div className="dev-warning-banner">
-                    <b>SSO/RBAC is OFF (Development mode):</b> The application is not protected by AD/SSO. All users have full access.
+                    <b>SSO/RBAC är AV (Utvecklingsläge):</b> Applikationen är inte skyddad av AD/SSO. Alla användare har full åtkomst.
                 </div>
             )}
             <div className="config-section">
@@ -114,7 +133,13 @@ const ConfigPanel = () => {
                             {setting.description && (
                                 <div className="setting-description">{setting.description}</div>
                             )}
-                            <button className="save-button" onClick={() => handleSave(setting)} disabled={saving || (setting.key !== 'RBAC_SSO_ENABLED' && !ssoEnabled)}>
+                            {setting.key !== 'RBAC_SSO_ENABLED' && (
+                                validateSetting(setting, editValues[setting.id]) &&
+                                <div className="error-message" style={{marginTop:4,marginBottom:4}}>
+                                    {validateSetting(setting, editValues[setting.id])}
+                                </div>
+                            )}
+                            <button className="save-button" onClick={() => handleSave(setting)} disabled={saving || (setting.key !== 'RBAC_SSO_ENABLED' && (!ssoEnabled || !!validateSetting(setting, editValues[setting.id])))}>
                                 Save
                             </button>
                         </div>
