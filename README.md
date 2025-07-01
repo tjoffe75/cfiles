@@ -32,6 +32,19 @@ For a deep dive into the technical implementation, see [ARCHITECTURE.md](ARCHITE
 **Prerequisites:**
 *   Docker
 *   Docker Compose
+*   (Optional) Node.js LTS if you want to run the frontend outside Docker
+
+**Environment setup:**
+- On **Windows** (PowerShell):
+  ```powershell
+  ./init_env.ps1
+  ```
+- On **Linux/macOS** (bash):
+  ```bash
+  bash init_env.sh
+  ```
+- Dessa skript kommer automatiskt att skapa `.env` och `frontend/.env` med slumpmässiga säkra värden om de inte redan finns.
+- Du kan redigera `.env` och `frontend/.env` manuellt om du vill ändra några värden.
 
 **Installation & Running:**
 
@@ -40,11 +53,12 @@ For a deep dive into the technical implementation, see [ARCHITECTURE.md](ARCHITE
     git clone <your-repo-url>
     cd cfiles
     ```
-2.  **Build and start all services:**
+2.  **Create environment files:** (se ovan)
+3.  **Build and start all services:**
     ```bash
     docker compose up -d --build
     ```
-3.  The application is now running:
+4.  The application is now running:
     *   **Frontend**: [http://localhost:3000](http://localhost:3000)
     *   **Backend API**: [http://localhost:8000](http://localhost:8000)
 

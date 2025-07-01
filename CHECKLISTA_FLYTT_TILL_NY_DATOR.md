@@ -1,9 +1,10 @@
-# Checklista: Flytta och starta Filesapp på ny dator (Windows)
+# Checklista: Flytta och starta Filesapp på ny dator (Windows/Linux)
 
 > **Nyhet 2025:**
 > - Gränssnittet är nu modernt och responsivt med centrerad titel och logotyp i vänstra hörnet.
 > - Dark mode-toggle är alltid synlig i top-baren.
 > - Logotypen kan bytas ut genom att ersätta `frontend/public/logo-placeholder.svg`.
+> - **Miljöfiler skapas nu automatiskt på både Windows (init_env.ps1) och Linux/macOS (init_env.sh).**
 
 1. **Installera förutsättningar**
    - [Git](https://git-scm.com/download/win)
@@ -17,10 +18,15 @@
    ```
 
 3. **Skapa miljövariabler automatiskt**
-   ```powershell
-   ./init_env.ps1
-   ```
-   - Scriptet skapar `.env` och `frontend\.env` med slumpade RabbitMQ-värden om de inte redan finns.
+   - På **Windows** (PowerShell):
+     ```powershell
+     ./init_env.ps1
+     ```
+   - På **Linux/macOS** (bash):
+     ```bash
+     bash init_env.sh
+     ```
+   - Scriptet skapar `.env` och `frontend\.env` med slumpade RabbitMQ- och Postgres-värden om de inte redan finns.
    - Öppna `.env` och `frontend\.env` i valfri editor om du vill ändra något.
 
 4. **Bygg och starta med Docker**
