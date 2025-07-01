@@ -6,7 +6,7 @@ from typing import List
 import asyncio
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Security, status
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Security, status, Body
 from sqlalchemy.orm import Session
 from database.database import get_db
 from database import models
@@ -92,11 +92,24 @@ status_manager = ConnectionManager() # Manager for status updates
 # In-memory cache for the last known status of each file
 file_status_cache = {}
 
+# --- Maintenance Mode Check Decorator ---
+from functools import wraps
+
+def require_not_maintenance_mode(endpoint_func):
+    @wraps(endpoint_func)
+    def wrapper(*args, db: Session = Depends(get_db), **kwargs):
+        setting = db.query(models.SystemSetting).filter_by(key="MAINTENANCE_MODE").first()
+        if setting and setting.value == "true":
+            raise HTTPException(status_code=503, detail="System is in maintenance mode.")
+        return endpoint_func(*args, db=db, **kwargs)
+    return wrapper
+
 router = APIRouter()
 
 UPLOAD_DIR = "/uploads"
 
 @router.post("/upload/", response_model=FileUploadResponse)
+@require_not_maintenance_mode
 async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR)
@@ -196,11 +209,13 @@ async def websocket_status_endpoint(websocket: WebSocket):
 
 
 @router.get("/files/", response_model=List[FileResponse])
+@require_not_maintenance_mode
 def get_files(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     files = db.query(models.File).order_by(models.File.upload_date.desc()).offset(skip).limit(limit).all()
     return files
 
 @router.get("/files/{file_id}", response_model=FileResponse)
+@require_not_maintenance_mode
 async def get_file(file_id: int, db: Session = Depends(get_db)):
     file = db.query(models.File).filter(models.File.id == file_id).first()
     if not file:
@@ -288,6 +303,28 @@ async def scan_virus(file_path: str = Form(...)):
         return {"message": "File sent for virus scanning", "file_path": file_path["file_path"]}
     except Exception as e:
         return {"error": str(e)}
+
+# --- Maintenance Mode Endpoints ---
+
+@router.get("/config/maintenance-mode")
+def get_maintenance_mode(db: Session = Depends(get_db)):
+    setting = db.query(models.SystemSetting).filter_by(key="MAINTENANCE_MODE").first()
+    if not setting:
+        raise HTTPException(status_code=500, detail="MAINTENANCE_MODE setting missing")
+    return {"maintenance_mode": setting.value == "true"}
+
+@router.post("/config/maintenance-mode")
+def set_maintenance_mode(
+    enabled: bool = Body(..., embed=True),
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user(role="admin"))
+):
+    setting = db.query(models.SystemSetting).filter_by(key="MAINTENANCE_MODE").first()
+    if not setting:
+        raise HTTPException(status_code=500, detail="MAINTENANCE_MODE setting missing")
+    setting.value = "true" if enabled else "false"
+    db.commit()
+    return {"maintenance_mode": setting.value == "true"}
 
 # Utility: Hämta SSO/RBAC-status och config
 

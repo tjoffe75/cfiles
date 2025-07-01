@@ -20,6 +20,9 @@ const ConfigPanel = () => {
     const [saving, setSaving] = useState(false);
     const [editValues, setEditValues] = useState({});
     const [ssoStatus, setSsoStatus] = useState({ enabled: false });
+    const [maintenanceMode, setMaintenanceMode] = useState(false);
+    const [maintenanceLoading, setMaintenanceLoading] = useState(true);
+    const [maintenanceSaving, setMaintenanceSaving] = useState(false);
 
     useEffect(() => {
         const fetchSettings = async () => {
@@ -45,8 +48,18 @@ const ConfigPanel = () => {
                 setSsoStatus({ enabled: false });
             }
         };
+        const fetchMaintenance = async () => {
+            try {
+                const resp = await axios.get(`${API_URL}/config/maintenance-mode`);
+                setMaintenanceMode(resp.data.maintenance_mode);
+            } catch (e) {
+                setMaintenanceMode(false);
+            }
+            setMaintenanceLoading(false);
+        };
         fetchSettings();
         fetchSsoStatus();
+        fetchMaintenance();
     }, []);
 
     const handleChange = (id, value) => {
@@ -66,6 +79,17 @@ const ConfigPanel = () => {
             console.error(err);
         }
         setSaving(false);
+    };
+
+    const handleMaintenanceToggle = async () => {
+        setMaintenanceSaving(true);
+        try {
+            const resp = await axios.post(`${API_URL}/config/maintenance-mode`, { enabled: !maintenanceMode });
+            setMaintenanceMode(resp.data.maintenance_mode);
+        } catch (e) {
+            setError('Failed to update maintenance mode.');
+        }
+        setMaintenanceSaving(false);
     };
 
     const validateSetting = (setting, value) => {
@@ -100,12 +124,31 @@ const ConfigPanel = () => {
     return (
         <div className="config-panel">
             <h2>System Configuration</h2>
-            {/* SSO/RBAC-banner visas endast när RBAC/SSO är avslaget */}
-            {!ssoEnabled && (
-                <div className="dev-warning-banner">
-                    <b>SSO/RBAC är AV (Utvecklingsläge):</b> Applikationen är inte skyddad av AD/SSO. Alla användare har full åtkomst.
-                </div>
-            )}
+            <div className="config-section">
+                <h3>Maintenance Mode</h3>
+                {maintenanceLoading ? (
+                    <div>Loading maintenance mode...</div>
+                ) : (
+                    <div className="config-item">
+                        <label title="Enable/disable maintenance mode">MAINTENANCE_MODE</label>
+                        <label className="switch">
+                            <input
+                                type="checkbox"
+                                checked={maintenanceMode}
+                                onChange={handleMaintenanceToggle}
+                                disabled={maintenanceSaving}
+                            />
+                            <span className="slider round"></span>
+                        </label>
+                        <span style={{marginLeft:8}}>{maintenanceMode ? 'ON' : 'OFF'}</span>
+                        {maintenanceMode && (
+                            <div className="dev-warning-banner" style={{marginTop:8}}>
+                                <b>Maintenance Mode is ON:</b> The system is temporarily unavailable for uploads and normal use.
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
             <div className="config-section">
                 <h3>AD/SSO Settings</h3>
                 <div className="config-list">

@@ -58,6 +58,7 @@ def init_system_settings():
     from database.database import SessionLocal
     from database import models
     settings_defaults = [
+        {"key": "MAINTENANCE_MODE", "value": "false", "description": "Enable maintenance mode (true/false)"},
         {"key": "RBAC_SSO_ENABLED", "value": "false", "description": "Enable SSO/RBAC (true/false)"},
         {"key": "AD_ENDPOINT", "value": "", "description": "AD/SSO endpoint (OpenID Connect)"},
         {"key": "AD_CLIENT_ID", "value": "", "description": "AD/SSO client id"},
