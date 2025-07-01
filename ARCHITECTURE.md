@@ -207,7 +207,17 @@ För att säkerställa säker kommunikation ska all extern trafik till applikati
 
 ---
 
-## ⚙️ Vision för Adminpanel & Konfiguration
+## ⚙️ Adminpanel & Konfiguration (Implementerat)
+
+> **Notera:** Adminpanelens "⚙️ Configuration"-sektion är nu fullt funktionell. Administratörer kan ändra systeminställningar direkt via UI:t, inklusive att slå på/av SSO/RBAC (RBAC_SSO_ENABLED) och redigera relaterade inställningar. Alla ändringar valideras direkt i gränssnittet (inline validation), och panelen har full dark mode-stöd. Backend och databas hanterar automatiskt alla nödvändiga systeminställningar vid uppstart, vilket gör systemet robust och modulärt.
+
+**Exempel på funktioner i konfigurationspanelen:**
+- Slå på/av SSO/RBAC (RBAC_SSO_ENABLED)
+- Redigera SSO/AD-inställningar (med inline-validering, t.ex. giltig URL, obligatoriska fält när SSO är aktivt)
+- Alla inställningar har stöd för dark mode
+- Felhantering och validering sker direkt i UI:t
+
+**Teknisk not:** Backend säkerställer automatiskt vid varje uppstart att alla nödvändiga systeminställningar (t.ex. `RBAC_SSO_ENABLED`) finns i databasen. Nya inställningar kan enkelt läggas till centralt och initieras automatiskt.
 
 *   **Maintenance Mode**: Möjlighet att stänga av systemet för underhåll.
 *   **SSO/RBAC**: Integration med Active Directory för rollbaserad åtkomst.
@@ -217,6 +227,7 @@ För att säkerställa säker kommunikation ska all extern trafik till applikati
 *   **Dark Mode**: Global toggle för alla användare.
 *   **Säkerhet**: JWT-autentisering, krypterad lagring.
 *   **Drift**: CI/CD, övervakning med Prometheus/Grafana.
+*   **UI-förbättringar**: Drag and drop-funktion för filuppladdning.
 
 ---
 

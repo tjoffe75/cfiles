@@ -49,6 +49,39 @@ def connect_to_db_with_retry():
                 logger.error("Could not connect to the database after all retries. The application will not start correctly.")
                 raise
 
+def init_system_settings():
+    """
+    Initierar alla nödvändiga systeminställningar i databasen om de saknas.
+    Lägg till nya inställningar i denna lista för att göra systemet modulärt.
+    """
+    from sqlalchemy.exc import IntegrityError
+    from database.database import SessionLocal
+    from database import models
+    settings_defaults = [
+        {"key": "RBAC_SSO_ENABLED", "value": "false", "description": "Enable SSO/RBAC (true/false)"},
+        {"key": "AD_ENDPOINT", "value": "", "description": "AD/SSO endpoint (OpenID Connect)"},
+        {"key": "AD_CLIENT_ID", "value": "", "description": "AD/SSO client id"},
+        {"key": "AD_CLIENT_SECRET", "value": "", "description": "AD/SSO client secret"},
+        {"key": "AD_GROUP_USERS", "value": "users", "description": "AD group for normal users"},
+        {"key": "AD_GROUP_ADMINS", "value": "admins", "description": "AD group for admins"},
+        # Lägg till fler nycklar här vid behov
+    ]
+    db = SessionLocal()
+    created = []
+    try:
+        for d in settings_defaults:
+            if not db.query(models.SystemSetting).filter_by(key=d["key"]).first():
+                s = models.SystemSetting(**d)
+                db.add(s)
+                created.append(d["key"])
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+    finally:
+        db.close()
+    if created:
+        logger.info(f"Följande systeminställningar skapades vid startup: {created}")
+
 async def listen_to_status_updates(ws_manager):
     """Listens for status updates from RabbitMQ and broadcasts them asynchronously."""
     rabbitmq_user = os.getenv("RABBITMQ_DEFAULT_USER", "guest")
@@ -131,6 +164,7 @@ async def lifespan(app: FastAPI):
     # Code to run on startup
     logger.info("Application startup...")
     connect_to_db_with_retry()
+    init_system_settings()  # <-- Lägg till denna rad
     # Start the RabbitMQ listener as a background task
     app.state.rabbitmq_listener_task = asyncio.create_task(listen_to_status_updates(status_manager))
     # Start the Ping-Pong service as a background task

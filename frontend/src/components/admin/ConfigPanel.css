@@ -188,3 +188,52 @@ input:checked + .slider:before {
 .slider.round:before {
     border-radius: 50%;
 }
+
+body.dark-mode .config-panel {
+    background: #23272f;
+    color: #e0e0e0;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+}
+body.dark-mode .config-section h3 {
+    color: #90caf9;
+}
+body.dark-mode .config-panel h2 {
+    color: #90caf9;
+}
+body.dark-mode .config-item {
+    background: #23272f;
+    border: 1px solid #374151;
+    box-shadow: 0 2px 8px rgba(30,30,30,0.12);
+}
+body.dark-mode .config-item label {
+    color: #e0e0e0;
+}
+body.dark-mode .config-item input[type="text"] {
+    background: #1a1d23;
+    color: #e0e0e0;
+    border: 1px solid #90caf9;
+}
+body.dark-mode .config-item input[type="text"]:focus {
+    border: 1.5px solid #42a5f5;
+}
+body.dark-mode .save-button {
+    background: linear-gradient(90deg, #1565c0 0%, #42a5f5 100%);
+    color: #fff;
+}
+body.dark-mode .save-button:disabled {
+    background: #374151;
+    color: #bdbdbd;
+}
+body.dark-mode .setting-description {
+    color: #b0bec5;
+}
+body.dark-mode .dev-warning-banner {
+    background: #3e2723;
+    color: #ffe082;
+    border: 1px solid #ffb300;
+}
+body.dark-mode .error-message {
+    background: #2d1b1b;
+    color: #ff8a65;
+    border: 1px solid #ff7043;
+}

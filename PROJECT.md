@@ -48,6 +48,10 @@ Projektet har ett fungerande end-to-end-flöde för säker filuppladdning, asynk
 
 ---
 
+## ⚙️ Adminpanel – Nuvarande läge
+
+> **Notera:** I nuläget är adminpanelens "⚙️ Configuration"-sektion endast informativ. Det finns inga knappar eller fält för att styra eller ändra appens inställningar via UI:t. All konfiguration sker utanför adminpanelen.
+
 ## 🗺️ Projekt-Roadmap (Resterande Vision)
 
 Följande funktioner från den ursprungliga arkitekturen återstår att implementera:
