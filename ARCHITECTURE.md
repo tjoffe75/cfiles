@@ -17,7 +17,7 @@ Detta dokument beskriver den tekniska arkitekturen, datastrukturen och interakti
 |  Frontend (React)                      | (Port 8000)        |  Backend API (FastAPI)             |
 |  - UI för uppladdning                  |                    |  - Hanterar anrop                  |
 |  - Visar filstatus                     |                    |  - Skriver till DB (Status: PENDING) |
-|  - Framtida Adminpanel                 |                    |  - Publicerar jobb till RabbitMQ   |
+|  - Adminpanel                          |                    |  - Publicerar jobb till RabbitMQ   |
 +----------------------------------------+                    +-------------------+------------------+
                                                                       |           ^
                                                                       | AMQP      | DB-anrop (PostgreSQL)
@@ -50,6 +50,7 @@ Systemet består av följande container-baserade tjänster som definieras i `doc
 *   **Frontend (React)**
     *   **Ansvar**: Tillhandahåller ett webbaserat användargränssnitt (UI) för att ladda upp filer och visa en lista med deras skanningsstatus i realtid.
     *   **UI/UX (2025):** Modernt, responsivt gränssnitt med centrerad titel, logotyp i vänstra hörnet och alltid synlig dark mode-toggle.
+    *   **Miljövariabler skapas automatiskt på Windows (init_env.ps1) och Linux/macOS (init_env.sh).**
     *   **Interaktioner**: Kommunicerar med Backend API:et via HTTP-anrop.
     *   **Framtid**: Kommer att byggas ut med en adminpanel för konfiguration och hantering av karantän.
 
@@ -216,3 +217,11 @@ För att säkerställa säker kommunikation ska all extern trafik till applikati
 *   **Dark Mode**: Global toggle för alla användare.
 *   **Säkerhet**: JWT-autentisering, krypterad lagring.
 *   **Drift**: CI/CD, övervakning med Prometheus/Grafana.
+
+---
+
+## ✅ Implementerat (Juli 2025)
+
+- Filuppladdning, scanning, statusuppdatering och karantän är fullt implementerat och testat.
+- Nedladdning av filer fungerar via både UI och API.
+- Status för filer uppdateras i realtid i användargränssnittet.

@@ -36,6 +36,8 @@ docker-compose.override.yml
 # Miljövariabler
 .env.local
 .env.*.local
+.env
+frontend/.env
 
 # Test- och täckningsrapporter
 coverage/

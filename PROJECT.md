@@ -18,7 +18,11 @@ Applikationens primära syfte är att erbjuda en robust och säker plattform fö
 
 ---
 
-## ✅ Nuvarande Status (Juni 2025)
+## ✅ Nuvarande Status (Juli 2025)
+
+- All grundläggande funktionalitet är klar: filuppladdning, scanning, statusuppdatering och karantän fungerar stabilt.
+- Nedladdning av filer är implementerat och testat.
+- Status för filer uppdateras i realtid i UI:t.
 
 Projektet har ett fungerande end-to-end-flöde för säker filuppladdning, asynkron virusskanning och hantering av infekterade filer. En adminpanel har implementerats för att ge administratörer insyn och kontroll över systemet.
 
@@ -26,6 +30,7 @@ Projektet har ett fungerande end-to-end-flöde för säker filuppladdning, asynk
 *   Modernt, responsivt gränssnitt med centrerad titel och logotyp i vänstra hörnet.
 *   Dark mode-toggle alltid synlig i top-baren.
 *   Logotypen kan bytas ut genom att ersätta `frontend/public/logo-placeholder.svg`.
+*   **Miljövariabler skapas automatiskt på Windows (init_env.ps1) och Linux/macOS (init_env.sh).**
 
 **Vad som är implementerat och fungerar:**
 *   **Backend API (`/config/upload/`)**: Tar emot filuppladdningar och sparar filinformation i databasen med status `PENDING`.
