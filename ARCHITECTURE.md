@@ -1,3 +1,15 @@
+# cfiles – Grundläggande riktlinjer (sammanfattning)
+
+Se även PROJECT.md för fullständig lista.
+
+- Inget får gå sönder: Ändringar får aldrig bryta befintlig funktionalitet.
+- Modularitet: All kod ska vara modulär och återanvändbar.
+- Robusthet: Felhantering och stabilitet är centralt.
+- Modern, lättanvänd UI: Frontend ska vara tydlig och modern.
+- Felhantering: Tydlig, användarvänlig och loggad.
+- Dev mode: "fejkuser" (devuser) används när SSO/RBAC är avstängt. Alla fil- och adminflöden kopplas då till devuser och ingen auth krävs.
+- Följ alltid dokumentation och riktlinjer i PROJECT.md och ARCHITECTURE.md.
+
 # 📚 Systemarkitektur – cfiles
 
 Detta dokument beskriver den tekniska arkitekturen, datastrukturen och interaktionerna mellan komponenter i **cfiles**-projektet.
