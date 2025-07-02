@@ -4,8 +4,8 @@ if (-Not (Test-Path ".env")) {
     # Generera ett slumpat lösenord (16 tecken, bokstäver och siffror, funkar i alla PowerShell-versioner)
     $pass = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 16 | % {[char]$_})
     $wsurl = "ws://localhost:8000/ws/status"
-    $pguser = "filesapp"
-    $pgdb = "filesappdb"
+    $pguser = "cfiles"
+    $pgdb = "cfilesdb"
     # Slumpar ett lösenord för Postgres
     $pgpass = -join ((65..90) + (97..122) + (48..57) | Get-Random -Count 16 | % {[char]$_})
     Set-Content .env @"
@@ -23,7 +23,7 @@ POSTGRES_DB=$pgdb
     $envLines = Get-Content .env
     $changed = $false
     if (-not ($envLines -match '^POSTGRES_USER=')) {
-        Add-Content .env "POSTGRES_USER=filesapp"
+        Add-Content .env "POSTGRES_USER=cfiles"
         $changed = $true
     }
     if (-not ($envLines -match '^POSTGRES_PASSWORD=')) {
@@ -33,7 +33,7 @@ POSTGRES_DB=$pgdb
         $changed = $true
     }
     if (-not ($envLines -match '^POSTGRES_DB=')) {
-        Add-Content .env "POSTGRES_DB=filesappdb"
+        Add-Content .env "POSTGRES_DB=cfilesdb"
         $changed = $true
     }
     if ($changed) { Write-Host ".env uppdaterad med saknade Postgres-variabler." }

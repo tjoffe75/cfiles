@@ -1,0 +1,28 @@
+.maintenance-mode-banner {
+    background-color: #ffc107; /* Amber */
+    color: #212529; /* Dark text for contrast */
+    padding: 12px 20px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: 500;
+    border-bottom: 1px solid #e0a800;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.maintenance-mode-banner-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.maintenance-mode-banner p {
+    margin: 0;
+}
+
+/* Dark Mode adjustments */
+[data-theme='dark'] .maintenance-mode-banner {
+    background-color: #d39e00; /* A slightly darker amber for dark mode */
+    color: #ffffff; /* Light text for dark background */
+    border-bottom: 1px solid #b38600;
+}

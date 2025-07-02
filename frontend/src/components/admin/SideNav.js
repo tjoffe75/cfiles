@@ -5,7 +5,7 @@ const SideNav = () => {
     const location = useLocation();
     return (
         <div className="side-nav">
-            <h3>Filesapp</h3>
+            <h3>cfiles</h3>
             <ul className="main-menu">
                 <li>
                     <Link to="/" className={location.pathname === '/' ? 'active' : ''}>

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import './FileUpload.css';
 
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+
 const FileUpload = ({ onUploadSuccess }) => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [message, setMessage] = useState('');
@@ -29,7 +31,7 @@ const FileUpload = ({ onUploadSuccess }) => {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const response = await fetch('http://localhost:8000/upload/', {
+      const response = await fetch(`${API_URL}/upload/`, {
         method: 'POST',
         body: formData,
       });
@@ -74,7 +76,7 @@ const FileUpload = ({ onUploadSuccess }) => {
     setMessage('Uploading...');
 
     try {
-      const response = await fetch('http://localhost:8000/upload/', {
+      const response = await fetch(`${API_URL}/upload/`, {
         method: 'POST',
         body: formData,
       });
@@ -99,36 +101,19 @@ const FileUpload = ({ onUploadSuccess }) => {
   };
 
   return (
-    <div className={`file-upload${document.body.classList.contains('dark-mode') ? ' dark-mode' : ''}`}> 
-      <h2>Upload a New File</h2>
-      <div
-        className={`dropzone${dragActive ? ' active' : ''}`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        tabIndex={0}
-        onClick={() => document.getElementById('fileInput').click()}
-      >
-        {selectedFile ? (
-          <span>Selected file: <b>{selectedFile.name}</b></span>
-        ) : (
-          <span>Drag and drop a file here, or click to select</span>
-        )}
-        <input
-          type="file"
-          onChange={handleFileChange}
-          style={{ display: 'none' }}
-          id="fileInput"
-        />
-      </div>
-      <button
-        onClick={() => document.getElementById('fileInput').click()}
-        style={{ marginRight: '8px' }}
-      >
-        Choose File
-      </button>
-      <button onClick={handleUpload}>Upload</button>
-      {message && <p className="upload-message">{message}</p>}
+    <div 
+      className={`file-upload ${dragActive ? 'drag-active' : ''}`}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+        <div className="dropzone-content">
+            <p>Drag and drop a file here, or click to select a file</p>
+            <input type="file" onChange={handleFileChange} />
+            <button onClick={handleUpload}>Upload</button>
+            {selectedFile && <p>Selected file: {selectedFile.name}</p>}
+            {message && <p className="upload-message">{message}</p>}
+        </div>
     </div>
   );
 };

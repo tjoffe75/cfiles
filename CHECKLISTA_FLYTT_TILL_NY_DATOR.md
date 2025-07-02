@@ -1,4 +1,4 @@
-# Checklista: Flytta och starta Filesapp på ny dator (Windows/Linux)
+# Checklista: Flytta och starta cfiles på ny dator (Windows/Linux)
 
 > **Nyhet 2025:**
 > - Gränssnittet är nu modernt och responsivt med centrerad titel och logotyp i vänstra hörnet.
@@ -67,44 +67,23 @@
 
 ## Starta om från en helt ren app
 
-Om du vill börja om från början och rensa bort alla filer, databaser och containrar:
+Om du vill börja om från början och rensa bort alla filer, databaser och containrar, använd de färdiga reset-skripten. Dessa skript automatiserar hela processen.
 
-1. **Stoppa och ta bort alla Docker-containrar**
-   ```powershell
-   docker compose down
-   ```
-2. **Ta bort alla genererade mappar och filer**
-   ```powershell
-   Remove-Item -Recurse -Force .\uploads, .\quarantine, .\testfiles, .env, .\frontend\.env
-   ```
-   (eller radera dem manuellt i Utforskaren)
-3. **Ta bort extra filer i projektmappen**
-   - Kontrollera om det finns oönskade filer som t.ex. `.zip`-arkiv eller gamla backup-filer i projektmappen och ta bort dem.
-   - Exempel för att ta bort alla zip-filer:
-     ```powershell
-     Remove-Item -Force .\*.zip
-     ```
-   - Kontrollera även manuellt i Utforskaren att inga extra filer ligger kvar.
-4. **Ta bort Docker-volymer (t.ex. för Postgres-data)**
-   ```powershell
-   docker volume rm filesapp_postgres-data
-   ```
-   (eller kör `docker volume ls` och ta bort rätt volym)
-5. **Skapa nya miljövariabler**
-   ```powershell
-   ./init_env.ps1
-   ```
-6. **Bygg och starta om allt**
-   ```powershell
-   docker compose build
-   docker compose up -d
-   ```
-7. **(Valfritt) Installera frontend-beroenden om du kör utanför Docker**
-   ```powershell
-   cd frontend
-   npm install
-   npm start
-   ```
+- **Windows (PowerShell):**
+  ```powershell
+  ./reset_env.ps1
+  ```
+- **Linux/macOS (bash):**
+  ```bash
+  bash ./reset_env.sh
+  ```
+
+Skripten kommer att:
+1. Stoppa och ta bort alla Docker-containrar och volymer.
+2. Radera mapparna `uploads`, `quarantine`, och `testfiles`.
+3. Ta bort `.env`-filerna.
+4. Köra `init_env`-skriptet för att skapa nya miljöfiler.
+5. Bygga och starta om alla tjänster.
 
 Nu har du en helt ren app – inga gamla filer, ingen gammal databas, och alla miljövariabler är nyskapade!
 
@@ -112,44 +91,23 @@ Nu har du en helt ren app – inga gamla filer, ingen gammal databas, och alla m
 
 ## How to reset the app to a completely clean state (English)
 
-If you want to start over and remove all files, databases, and containers:
+If you want to start over and remove all files, databases, and containers, use the provided reset scripts. These scripts automate the entire process.
 
-1. **Stop and remove all Docker containers**
-   ```powershell
-   docker compose down
-   ```
-2. **Delete all generated folders and files**
-   ```powershell
-   Remove-Item -Recurse -Force .\uploads, .\quarantine, .\testfiles, .env, .\frontend\.env
-   ```
-   (or delete them manually in File Explorer)
-3. **Remove extra files in the project folder**
-   - Check if there are any unwanted files such as `.zip` archives or old backup files in the project folder and delete them.
-   - Example to remove all zip files:
-     ```powershell
-     Remove-Item -Force .\*.zip
-     ```
-   - Also check manually in File Explorer that no extra files remain.
-4. **Remove Docker volumes (e.g. for Postgres data)**
-   ```powershell
-   docker volume rm filesapp_postgres-data
-   ```
-   (or run `docker volume ls` and remove the correct volume)
-5. **Create new environment variables**
-   ```powershell
-   ./init_env.ps1
-   ```
-6. **Rebuild and restart everything**
-   ```powershell
-   docker compose build
-   docker compose up -d
-   ```
-7. **(Optional) Install frontend dependencies if running outside Docker**
-   ```powershell
-   cd frontend
-   npm install
-   npm start
-   ```
+- **Windows (PowerShell):**
+  ```powershell
+  ./reset_env.ps1
+  ```
+- **Linux/macOS (bash):**
+  ```bash
+  bash ./reset_env.sh
+  ```
+
+The scripts will:
+1. Stop and remove all Docker containers and volumes.
+2. Delete the `uploads`, `quarantine`, and `testfiles` directories.
+3. Remove the `.env` files.
+4. Run the `init_env` script to create new environment files.
+5. Rebuild and restart all services.
 
 Now you have a completely clean app – no old files, no old database, and all environment variables are newly created!
 
