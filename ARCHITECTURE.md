@@ -61,6 +61,7 @@ Systemet består av följande container-baserade tjänster som definieras i `doc
 
 *   **Frontend (React)**
     *   **Ansvar**: Tillhandahåller ett webbaserat användargränssnitt (UI) för att ladda upp filer och visa en lista med deras skanningsstatus i realtid.
+    *   **Portabilitet**: För att garantera att frontend-containern är helt portabel och använder de exakta `node_modules`-beroenden som installerats under bygget, används en anonym Docker-volym. Detta förhindrar att en lokal `node_modules`-mapp på värddatorn av misstag skrivs över den i containern, vilket säkerställer en konsekvent och pålitlig miljö.
     *   **UI/UX (2025):** Modernt, responsivt gränssnitt med centrerad titel, logotyp i vänstra hörnet och alltid synlig dark mode-toggle.
     *   **Miljövariabler skapas automatiskt på Windows (init_env.ps1) och Linux/macOS (init_env.sh).**
     *   **Interaktioner**: Kommunicerar med Backend API:et via HTTP-anrop.
@@ -95,6 +96,7 @@ Systemet består av följande container-baserade tjänster som definieras i `doc
     *   `./uploads` och `./quarantine`: Dessa mappar delas mellan `backend`, `workers` och `clamav` för att ge alla tjänster åtkomst till filerna.
     *   `postgres-data`: En namngiven volym som säkerställer att databasens data är persistent.
     *   Kod-volymer (`./frontend:/app`, `./backend:/app`): Används för utveckling för att spegla kodändringar direkt i containern.
+    *   **Anonym volym (`/app/node_modules` i `frontend`):** Denna kritiska inställning säkerställer att den `node_modules`-katalog som byggs inuti Docker-containern alltid används. Det förhindrar att en eventuell `node_modules`-mapp på värddatorn (som kan ha andra beroenden eller versioner) monteras och skriver över den i containern. Resultatet är en helt portabel frontend-miljö som fungerar likadant överallt, utan krav på att köra `npm install` manuellt på värddatorn.
 
 ---
 

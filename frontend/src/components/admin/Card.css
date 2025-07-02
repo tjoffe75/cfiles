@@ -1,0 +1,32 @@
+.card {
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  margin-bottom: 2rem;
+  overflow: hidden; /* Ensures content respects border radius */
+}
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding: 1.25rem 1.5rem;
+  margin: 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.card-content {
+  padding: 1.5rem;
+}
+
+/* Dark Mode Styles */
+.dark-mode .card {
+  background-color: #1f2937;
+  border-color: #374151;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2), 0 2px 4px -1px rgba(0, 0, 0, 0.15);
+}
+
+.dark-mode .card-title {
+  border-bottom-color: #374151;
+  color: #e5e7eb;
+}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Card from './Card'; // Import the Card component
 import './ConfigPanel.css';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
@@ -126,101 +127,110 @@ const ConfigPanel = () => {
 
     return (
         <div className="config-panel">
-            <h2>Configuration</h2>
+            <h1 className="config-title">Configuration</h1>
             {error && <div className="error-message">{error}</div>}
-            <div className="maintenance-section">
-                <h3>Maintenance Mode</h3>
+
+            <Card title="Maintenance Mode">
                 {maintenanceLoading ? (
                     <div>Loading maintenance mode...</div>
                 ) : (
                     <div className="config-item">
                         <label title="Enable/disable maintenance mode">MAINTENANCE_MODE</label>
-                        <label className="switch">
-                            <input
-                                type="checkbox"
-                                checked={maintenanceMode}
-                                onChange={handleMaintenanceToggle}
-                                disabled={maintenanceSaving}
-                            />
-                            <span className="slider round"></span>
-                        </label>
-                        <span style={{marginLeft:8}}>{maintenanceMode ? 'ON' : 'OFF'}</span>
+                        <div className="config-control">
+                            <label className="switch">
+                                <input
+                                    type="checkbox"
+                                    checked={maintenanceMode}
+                                    onChange={handleMaintenanceToggle}
+                                    disabled={maintenanceSaving}
+                                />
+                                <span className="slider round"></span>
+                            </label>
+                            <span className="switch-status">{maintenanceMode ? 'ON' : 'OFF'}</span>
+                        </div>
                     </div>
                 )}
-            </div>
-            <div className="config-section">
-                <h3>AD/SSO Settings</h3>
+            </Card>
+
+            <Card title="AD/SSO Settings">
                 <div className="config-list">
                     {ssoSettings.map(setting => (
                         <div className="config-item" key={setting.id}>
-                            <label title={setting.description || ''}>{setting.key}</label>
-                            {setting.key === 'RBAC_SSO_ENABLED' ? (
-                                <label className="switch">
+                            <div className="config-item-details">
+                                <label title={setting.description || ''}>{setting.key}</label>
+                                {setting.description && (
+                                    <div className="setting-description">{setting.description}</div>
+                                )}
+                                {setting.key !== 'RBAC_SSO_ENABLED' && validateSetting(setting, editValues[setting.id]) &&
+                                    <div className="error-message">
+                                        {validateSetting(setting, editValues[setting.id])}
+                                    </div>
+                                }
+                            </div>
+                            <div className="config-control">
+                                {setting.key === 'RBAC_SSO_ENABLED' ? (
+                                    <label className="switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={editValues[setting.id] === 'true'}
+                                            onChange={e => handleChange(setting.id, e.target.checked ? 'true' : 'false')}
+                                        />
+                                        <span className="slider round"></span>
+                                    </label>
+                                ) : (
                                     <input
-                                        type="checkbox"
-                                        checked={editValues[setting.id] === 'true'}
-                                        onChange={e => handleChange(setting.id, e.target.checked ? 'true' : 'false')}
+                                        type="text"
+                                        value={editValues[setting.id] || ''}
+                                        onChange={e => handleChange(setting.id, e.target.value)}
+                                        placeholder={setting.description || ''}
+                                        disabled={!ssoEnabled}
                                     />
-                                    <span className="slider round"></span>
-                                </label>
-                            ) : (
-                                <input
-                                    type="text"
-                                    value={editValues[setting.id] || ''}
-                                    onChange={e => handleChange(setting.id, e.target.value)}
-                                    placeholder={setting.description || ''}
-                                    disabled={!ssoEnabled}
-                                />
-                            )}
-                            {setting.description && (
-                                <div className="setting-description">{setting.description}</div>
-                            )}
-                            {setting.key !== 'RBAC_SSO_ENABLED' && (
-                                validateSetting(setting, editValues[setting.id]) &&
-                                <div className="error-message" style={{marginTop:4,marginBottom:4}}>
-                                    {validateSetting(setting, editValues[setting.id])}
-                                </div>
-                            )}
-                            <button className="save-button" onClick={() => handleSave(setting)} disabled={saving || (setting.key !== 'RBAC_SSO_ENABLED' && (!ssoEnabled || !!validateSetting(setting, editValues[setting.id])))}>
-                                Save
-                            </button>
+                                )}
+                                <button className="save-button" onClick={() => handleSave(setting)} disabled={saving || (setting.key !== 'RBAC_SSO_ENABLED' && (!ssoEnabled || !!validateSetting(setting, editValues[setting.id])))}>
+                                    Save
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>
-            </div>
-            <div className="config-section">
-                <h3>Other Settings</h3>
+            </Card>
+
+            <Card title="Other Settings">
                 <div className="config-list">
                     {otherSettings.map(setting => (
                         <div className="config-item" key={setting.id}>
-                            <label title={setting.description || ''}>{setting.key}</label>
-                            {setting.value === 'true' || setting.value === 'false' ? (
-                                <label className="switch">
+                            <div className="config-item-details">
+                                <label title={setting.description || ''}>{setting.key}</label>
+                                {setting.description && (
+                                    <div className="setting-description">{setting.description}</div>
+                                )}
+                            </div>
+                            <div className="config-control">
+                                {setting.value === 'true' || setting.value === 'false' ? (
+                                    <label className="switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={editValues[setting.id] === 'true'}
+                                            onChange={e => handleChange(setting.id, e.target.checked ? 'true' : 'false')}
+                                        />
+                                        <span className="slider round"></span>
+                                    </label>
+                                ) : (
                                     <input
-                                        type="checkbox"
-                                        checked={editValues[setting.id] === 'true'}
-                                        onChange={e => handleChange(setting.id, e.target.checked ? 'true' : 'false')}
+                                        type="text"
+                                        value={editValues[setting.id] || ''}
+                                        onChange={e => handleChange(setting.id, e.target.value)}
+                                        placeholder={setting.description || ''}
                                     />
-                                    <span className="slider round"></span>
-                                </label>
-                            ) : (
-                                <input
-                                    type="text"
-                                    value={editValues[setting.id] || ''}
-                                    onChange={e => handleChange(setting.id, e.target.value)}
-                                    placeholder={setting.description || ''}
-                                />
-                            )}
-                            {setting.description && (
-                                <div className="setting-description">{setting.description}</div>
-                            )}
-                            <button className="save-button" onClick={() => handleSave(setting)} disabled={saving}>
-                                Save
-                            </button>
+                                )}
+                                <button className="save-button" onClick={() => handleSave(setting)} disabled={saving}>
+                                    Save
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>
-            </div>
+            </Card>
         </div>
     );
 };

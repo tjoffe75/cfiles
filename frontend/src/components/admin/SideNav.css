@@ -1,0 +1,84 @@
+/* SideNav.css */
+
+.side-nav {
+    background-color: var(--background-color-nav);
+    color: var(--text-color-nav);
+    padding: 20px 10px;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.side-nav h3 {
+    font-size: 1.5rem;
+    font-weight: bold;
+    margin-bottom: 30px;
+    padding: 0 10px;
+    text-align: center;
+    color: var(--text-color-header);
+}
+
+.side-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.side-nav li {
+    margin-bottom: 10px;
+}
+
+.side-nav a {
+    color: var(--text-color-nav);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-radius: 8px;
+    transition: background-color 0.2s, color 0.2s;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.side-nav a:hover {
+    background-color: var(--hover-color);
+    color: var(--text-color-hover);
+}
+
+.side-nav a.active {
+    background-color: var(--active-color);
+    color: var(--text-color-active);
+    font-weight: 700;
+}
+
+.side-nav .nav-icon {
+    margin-right: 15px;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.side-nav .nav-label {
+    flex-grow: 1;
+}
+
+.admin-submenu {
+    padding-left: 25px; /* Indent submenu */
+    margin-top: 8px;
+    border-left: 2px solid var(--border-color-submenu);
+    margin-left: 20px;
+}
+
+.admin-submenu li {
+    margin-bottom: 5px;
+}
+
+.admin-submenu a {
+    padding: 10px 15px;
+    font-size: 0.95rem;
+}
+
+.admin-submenu a.active {
+    border: none; /* Remove border for active submenu item if not desired */
+}
