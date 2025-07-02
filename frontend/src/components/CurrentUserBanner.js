@@ -9,7 +9,7 @@ const CurrentUserBanner = () => {
         const fetchSsoStatus = async () => {
             setIsLoading(true);
             try {
-                const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+                const apiUrl = process.env.REACT_APP_API_URL || '';
                 // Corrected endpoint to fetch simple SSO status
                 const response = await fetch(`${apiUrl}/config/sso-status`);
                 

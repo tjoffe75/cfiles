@@ -18,74 +18,91 @@ Detta dokument beskriver den tekniska arkitekturen, datastrukturen och interakti
 
 ##  diagrama de Arquitectura
 
+Följande diagram illustrerar trafikflödet och relationen mellan tjänsterna. All extern trafik dirigeras genom Traefik, som hanterar HTTPS och dirigerar förfrågningar till rätt tjänst.
+
 ```
-                +-----------------------------------------------------------------+
-                | Användare (Webbläsare)                                          |
-                +-----------------------------------------------------------------+
-                      |                                      ^
-                      | HTTP/HTTPS (Port 3000)               |
-                      v                                      |
-+---------------------+------------------+<-- Nätverksanrop -->+-------------------+------------------+
-|  Frontend (React)                      | (Port 8000)        |  Backend API (FastAPI)             |
-|  - UI för uppladdning                  |                    |  - Hanterar anrop                  |
-|  - Visar filstatus                     |                    |  - Skriver till DB (Status: PENDING) |
-|  - Adminpanel                          |                    |  - Publicerar jobb till RabbitMQ   |
-+----------------------------------------+                    +-------------------+------------------+
+                +-----------------------------------------------------------------
+                | User (Web Browser)
+                +-----------------------------------------------------------------
+                      |
+                      | HTTPS (Port 443)
+                      v
++---------------------+------------------+
+|  Traefik (Reverse Proxy)               |
+|  - Handles TLS/SSL Termination         |
+|  - Routes traffic based on Host & Path |
+|  - /api/* or /ws/* -> Backend Service  |
+|  - All other traffic -> Frontend Service|
++---------------------+------------------+
+           |                             |
+           | (Forwards Request)          | (Forwards Request)
+           v                             v
++---------------------+------------------+      +-------------------+------------------+
+|  Frontend (React)                      |      |  Backend API (FastAPI)             |
+|  - Serves the user interface           |      |  - Handles API and WebSocket requests|
+|  - Manages UI state                    |      |  - Writes to DB (Status: PENDING)    |
+|  - Admin Panel UI                      |      |  - Publishes jobs to RabbitMQ      |
++----------------------------------------+      +-------------------+------------------+
                                                                       |           ^
-                                                                      | AMQP      | DB-anrop (PostgreSQL)
+                                                                      | AMQP      | DB Calls (PostgreSQL)
                                                                       v           |
 +----------------------------------------+      +---------------------+-----------+------ +
-|  Meddelandekö (RabbitMQ)               |      |  Databas (PostgreSQL)                  |
-|  - file_queue                          |<---->|  - Lagrar fil-metadata, status, etc.   |
-|  - Hanterar asynkrona jobb             |      |  - Använder persistent volym (pg-data) |
+|  Message Queue (RabbitMQ)              |      |  Database (PostgreSQL)                 |
+|  - `file_queue` for async jobs         |<---->|  - Stores file metadata, status, etc.  |
+|  - Decouples API from workers          |      |  - Uses a persistent volume (pg-data)  |
 +----------------------------------------+      +----------------------------------------+
       |
-      | AMQP (Konsumerar jobb)
+      | AMQP (Consumes Jobs)
       v
 +---------------------+------------------+
-|  Workers (Python)                      |
-|  - Lyssnar på file_queue               |
-|  - Uppdaterar DB (Status: SCANNING)    |
-|  - Anropar ClamAV för skanning         |----TCP (Port 3310)-->+--------------------------+
-|  - Uppdaterar DB (Status: CLEAN/INFECTED)|                    |  Virusskanner (ClamAV)   |
-|  - Flyttar fil till /quarantine        |                    |  - Tar emot fil för skanning |
-+----------------------------------------+                    +--------------------------+
+|  Workers (Python)  (Scalable)          |
+|  - Listens to `file_queue`             |
+|  - Updates DB (Status: SCANNING)       |
+|  - Calls ClamAV for scanning           |----TCP (Port 3310)-->+--------------------------+
+|  - Updates DB (Status: CLEAN/INFECTED) |                      |  Virus Scanner (ClamAV)  |
+|  - Moves infected files to /quarantine |                      |  - Scans files for malware |
++----------------------------------------+                      +--------------------------+
 
 ```
 
 ---
 
-## 📌 Komponentbeskrivning
+## ⚖️ Scalability and Robustness
 
-Systemet består av följande container-baserade tjänster som definieras i `docker-compose.yml`:
+This architecture is inherently scalable and robust due to the decoupling of its components:
+
+-   **Stateless Services**: The `backend` and `workers` are stateless, meaning you can run multiple instances of them without conflict.
+-   **Load Balancing**: Traefik can automatically load balance traffic across multiple instances of the `frontend` and `backend` services.
+-   **Asynchronous Processing**: By using RabbitMQ, the time-consuming scanning process is handled asynchronously. If there is a sudden influx of file uploads, they simply queue up, preventing the API from becoming overloaded. The system can catch up later by processing the queue.
+-   **Scalable Workers**: The most resource-intensive part of the system is the `workers`. You can easily scale up the number of worker containers to handle a higher load of file scans, without affecting the rest of the system. This can be done by running: `docker-compose up --scale workers=5 -d`.
+
+---
+
+## Component Overview
+
+*   **Traefik (Reverse Proxy)**
+    *   **Role**: The single, scalable entry point for all incoming traffic. It secures the application via HTTPS and load balances requests to the correct service.
 
 *   **Frontend (React)**
-    *   **Ansvar**: Tillhandahåller ett webbaserat användargränssnitt (UI) för att ladda upp filer och visa en lista med deras skanningsstatus i realtid.
-    *   **Portabilitet**: För att garantera att frontend-containern är helt portabel och använder de exakta `node_modules`-beroenden som installerats under bygget, används en anonym Docker-volym. Detta förhindrar att en lokal `node_modules`-mapp på värddatorn av misstag skrivs över den i containern, vilket säkerställer en konsekvent och pålitlig miljö.
-    *   **UI/UX (2025):** Modernt, responsivt gränssnitt med centrerad titel, logotyp i vänstra hörnet och alltid synlig dark mode-toggle.
-    *   **Miljövariabler skapas automatiskt på Windows (init_env.ps1) och Linux/macOS (init_env.sh).**
-    *   **Interaktioner**: Kommunicerar med Backend API:et via HTTP-anrop.
-    *   **Framtid**: Kommer att byggas ut med en adminpanel för konfiguration och hantering av karantän.
+    *   **Role**: Provides the web-based user interface. Can be scaled to multiple instances if user traffic becomes extremely high.
+    *   **Portability**: Uses an anonymous Docker volume for `node_modules` to ensure the container is fully portable.
 
 *   **Backend API (FastAPI)**
-    *   **Ansvar**: Tar emot filuppladdningar, validerar indata, sparar filen temporärt och skapar en post i databasen med status `PENDING`. Publicerar därefter ett meddelande med filens ID till RabbitMQ för asynkron bearbetning.
-    *   **Interaktioner**: Lyssnar på port `8000`, ansluter till PostgreSQL-databasen och publicerar meddelanden till RabbitMQ.
+    *   **Role**: Handles all business logic. As a stateless service, it can be scaled to multiple instances to handle a high volume of API requests.
+    *   **Interactions**: Listens for traffic from Traefik, connects to the database, and publishes jobs to RabbitMQ.
 
 *   **Workers (Python)**
-    *   **Ansvar**: Systemets "arbetshäst". En eller flera processer som körs i bakgrunden och lyssnar på jobb från `file_queue` i RabbitMQ. När ett jobb tas emot, uppdateras filens status till `SCANNING`, filen skickas till ClamAV, och slutligen uppdateras statusen till `CLEAN` eller `INFECTED`.
-    *   **Interaktioner**: Prenumererar på meddelanden från RabbitMQ, ansluter till databasen för att uppdatera status, och kommunicerar med ClamAV via TCP.
+    *   **Role**: The primary component for scalability. These workers process scan jobs asynchronously. You can increase the number of worker containers to increase the scanning throughput of the entire system.
+    *   **Interactions**: Subscribes to RabbitMQ, connects to the database, and communicates with ClamAV.
 
-*   **Meddelandekö (RabbitMQ)**
-    *   **Ansvar**: Fungerar som en mellanhand för att frikoppla backend från workers. Detta gör systemet robust och skalbart; om en worker kraschar, ligger jobbet kvar i kön.
-    *   **Interaktioner**: Tar emot meddelanden från Backend API och skickar dem vidare till en tillgänglig worker.
+*   **Message Queue (RabbitMQ)**
+    *   **Role**: The core of the system's robustness and scalability. It decouples the `backend` from the `workers`, ensuring that jobs are never lost.
 
-*   **Databas (PostgreSQL)**
-    *   **Ansvar**: Lagrar all persistent data, inklusive filinformation (namn, sökväg, status, skanningsresultat) och framtida systemkonfiguration.
-    *   **Persistens**: Använder en Docker-volym (`postgres-data`) för att säkerställa att datan överlever omstart av containern.
+*   **Database (PostgreSQL)**
+    *   **Role**: The persistent storage for all application data. For very high-scale deployments, this could be moved to a managed database cluster.
 
-*   **Virusskanner (ClamAV)**
-    *   **Ansvar**: En dedikerad tjänst för att skanna filer efter virus och skadlig kod.
-    *   **Interaktioner**: Lyssnar på nätverksanrop (port `3310`) från `workers`-tjänsten.
+*   **Virus Scanner (ClamAV)**
+    *   **Role**: A dedicated service for scanning files. For extreme-scale deployments, one could explore strategies for scaling the scanning service itself.
 
 ---
 
@@ -196,26 +213,29 @@ Systemet ska kunna sättas i ett underhållsläge via en miljövariabel, t.ex. `
 
 ---
 
-## 🔒 HTTPS och Certifikathantering (Vision)
+## 🔒 HTTPS och Certifikathantering (Implementerat)
 
-För att säkerställa säker kommunikation ska all extern trafik till applikationen gå över HTTPS.
+För att säkerställa säker kommunikation kan all extern trafik till applikationen nu hanteras över HTTPS. Systemet är byggt för att integreras med en **Reverse Proxy** (som Traefik, konfigurerad i `docker-compose.yml`), vilken terminerar SSL/TLS-anslutningar.
 
-*   **Implementation**: Detta hanteras inte direkt i applikationstjänsterna (frontend/backend) utan av en **Reverse Proxy** (t.ex. Traefik, som kan konfigureras i `docker-compose.yml`, eller Nginx).
+**Nyckelfunktioner:**
+*   **Admin-UI för HTTPS**: Administratörer kan nu direkt via konfigurationspanelen:
+    *   **Aktivera eller avaktivera HTTPS** globalt för applikationen.
+    *   **Ladda upp anpassade SSL-certifikat**, inklusive certifikatfil (`cert.pem`) och privat nyckel (`key.key`).
+*   **Dynamisk Konfiguration**: Systemet sparar inställningarna och certifikaten på en delad volym som reverse proxyn (Traefik) använder för att dynamiskt och säkert applicera TLS-konfigurationen.
 *   **Ansvarsfördelning**:
-    *   **Reverse Proxy**: Terminerar SSL/TLS-anslutningar. Den ansvarar för att hantera certifikat.
-    *   **Applikationstjänster**: Kommunicerar internt via HTTP, eftersom de körs i ett skyddat Docker-nätverk.
-*   **Automatisk Certifikatförnyelse**: Genom att använda en reverse proxy med Let's Encrypt-integration kan SSL-certifikat skapas och förnyas automatiskt, vilket minimerar manuell hantering och säkerställer att certifikaten aldrig går ut.
+    *   **Reverse Proxy (Traefik)**: Ansvarar för att terminera SSL/TLS och dirigera trafiken. Den använder routrar för att skicka trafik till rätt tjänst: en för HTTP som omedelbart omdirigerar till HTTPS, och en för HTTPS som skickar trafik vidare till antingen `frontend` (standard) eller `backend` (om sökvägen börjar med `/api`).
+    *   **Applikationstjänster (cfiles)**: Tillhandahåller ett enkelt gränssnitt för att hantera konfigurationen utan att behöva redigera konfigurationsfiler manuellt. Applikationstjänsterna kommunicerar internt via HTTP i det skyddade Docker-nätverket.
 
 ---
 
 ## 🎯 Informationsflöden
 
 ### Implementerat Flöde
-`Användare → Frontend (React) → Backend API (FastAPI) → RabbitMQ → Virus-Worker → ClamAV & PostgreSQL`
+`Användare → Traefik (HTTPS) → [Frontend/Backend] → RabbitMQ → Virus-Worker → ClamAV & PostgreSQL`
 
 ### Vision för Informationsflöden
 **Normal drift:**
-`Användare → AD (SSO) → API → RabbitMQ → Workers → DB → Resultat`
+`Användare → AD (SSO) → Traefik (HTTPS) → [Frontend/Backend] → RabbitMQ → Workers → DB → Resultat`
 
 **Maintenance mode ON:**
 `Användare → Blockerad → Underhållsmeddelande`
@@ -229,15 +249,17 @@ För att säkerställa säker kommunikation ska all extern trafik till applikati
 **Exempel på funktioner i konfigurationspanelen:**
 - Slå på/av SSO/RBAC (RBAC_SSO_ENABLED)
 - Redigera SSO/AD-inställningar (med inline-validering, t.ex. giltig URL, obligatoriska fält när SSO är aktivt)
+- Toggla Maintenance Mode (kräver admin vid RBAC/SSO)
+- Aktivera/avaktivera HTTPS
+- Ladda upp anpassade SSL-certifikat (cert.pem och key.key)
 - Alla inställningar har stöd för dark mode
 - Felhantering och validering sker direkt i UI:t
-- Toggla Maintenance Mode (kräver admin vid RBAC/SSO)
 
-**Teknisk not:** Backend säkerställer automatiskt vid varje uppstart att alla nödvändiga systeminställningar (t.ex. `RBAC_SSO_ENABLED`, `MAINTENANCE_MODE`) finns i databasen. Nya inställningar kan enkelt läggas till centralt och initieras automatiskt.
+**Teknisk not:** Backend säkerställer automatiskt vid varje uppstart att alla nödvändiga systeminställningar (t.ex. `RBAC_SSO_ENABLED`, `MAINTENANCE_MODE`, `HTTPS_ENABLED`) finns i databasen. Nya inställningar kan enkelt läggas till centralt och initieras automatiskt.
 
 *   **Maintenance Mode**: Möjlighet att stänga av systemet för underhåll.
 *   **SSO/RBAC**: Integration med Active Directory för rollbaserad åtkomst.
-*   **HTTPS & Certifikat**: Hantering av TLS/SSL-certifikat.
+*   **HTTPS & Certifikat**: Hantering av TLS/SSL-certifikat via adminpanelen.
 *   **Loggläsare**: Ett gränssnitt för att se och filtrera loggar från alla tjänster.
 *   **Branding**: Möjlighet att ladda upp en egen logotyp.
 *   **Dark Mode**: Global toggle för alla användare.

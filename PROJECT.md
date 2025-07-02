@@ -1,111 +1,56 @@
-# cfiles – Projektets riktlinjer
+# Project cfiles: Goals and Guidelines
 
-## Grundläggande principer
-
-1. **Inget får gå sönder**
-   - Alla ändringar ska ta hänsyn till befintlig kod och funktionalitet.
-   - Existerande features ska alltid fortsätta fungera efter en ändring.
-
-2. **Modularitet**
-   - Koden ska vara modulär och uppdelad i tydliga, återanvändbara komponenter och funktioner.
-   - Undvik duplicering och hårdkodning.
-
-3. **Robusthet**
-   - All kod ska ha robust felhantering, särskilt för filhantering, autentisering och WebSocket.
-   - Systemet ska klara oväntade situationer utan att krascha eller ge dålig användarupplevelse.
-
-4. **Modern och lättanvänd UI**
-   - Frontend ska vara modern, tydlig och enkel att använda.
-   - UI-komponenter ska vara konsekventa och följa best practices.
-
-5. **Felhantering**
-   - Alla endpoints och UI-flöden ska ha tydlig och användarvänlig felhantering.
-   - Loggning ska finnas för felsökning, men inte störa användaren.
-
-6. **Utvecklarläge (dev mode) och fejkuser**
-   - När SSO/RBAC är avstängt (RBAC_SSO_ENABLED = false) används automatiskt en fejk-användare ("devuser") för alla API-anrop.
-   - "devuser" har rollerna ["admin", "user"] och kräver ingen Authorization-header.
-   - Detta gäller endast i utvecklingsläge och får inte påverka säkerheten i produktion.
-   - All fil- och folderhantering i dev mode kopplas till "devuser".
-
-7. **Följ projektets dokumentation**
-   - Följ alltid riktlinjer i `PROJECT.md`, `ARCHITECTURE.md` och annan dokumentation.
-   - Om du är osäker, läs in dessa filer innan du gör ändringar.
+This document outlines the overall purpose, current status, future roadmap, and core development principles for the **cfiles** application.
 
 ---
 
-# 🚀 Projektvision – cfiles
+## 🎯 Core Purpose and Goals
 
-Detta dokument beskriver det övergripande syftet, den nuvarande statusen och den framtida visionen för **cfiles**-applikationen.
+The primary purpose of **cfiles** is to provide a robust and secure platform for scanning files, with a focus on automated security checks and scalability.
 
----
-
-## 🎯 Syfte och Mål (Vision)
-
-Applikationens primära syfte är att erbjuda en robust och säker plattform för skanning av filer, med fokus på automatisk säkerhetskontroll och skalbarhet.
-
-**Kärnfunktionalitet (Vision):**
-*   Säker uppladdning av filer.
-*   Automatisk och asynkron virus- och checksum-scanning.
-*   En centraliserad karantän för infekterade eller misstänkta filer.
-*   En komplett adminpanel för systemkonfiguration, övervakning och hantering.
-*   Möjlighet att ladda ner skanningsrapporter.
-*   Stöd för SSO (Single Sign-On) och RBAC (Role-Based Access Control) via Active Directory.
+**Key Project Goals:**
+*   Secure file uploads.
+*   Asynchronous, automatic virus and checksum scanning.
+*   A centralized quarantine for infected or suspicious files.
+*   A comprehensive admin panel for system configuration, monitoring, and management.
+*   Support for Single Sign-On (SSO) and Role-Based Access Control (RBAC).
+*   Downloadable scan reports.
 
 ---
 
-## ✅ Nuvarande Status (Juli 2025)
+## ✅ Current Status (July 2025)
 
-- All grundläggande funktionalitet är klar: filuppladdning, scanning, statusuppdatering och karantän fungerar stabilt.
-- Nedladdning av filer är implementerat och testat.
-- Status för filer uppdateras i realtid i UI:t.
+The project has a stable end-to-end flow for secure file uploads, asynchronous virus scanning, and handling of infected files. All core functionality is in place.
 
-Projektet har ett fungerande end-to-end-flöde för säker filuppladdning, asynkron virusskanning och hantering av infekterade filer. En adminpanel har implementerats för att ge administratörer insyn och kontroll över systemet.
-
-**UI/UX (2025):**
-*   Modernt, responsivt gränssnitt med centrerad titel och logotyp i vänstra hörnet.
-*   Dark mode-toggle alltid synlig i top-baren.
-*   Logotypen kan bytas ut genom att ersätta `frontend/public/logo-placeholder.svg`.
-*   **Miljövariabler skapas automatiskt på Windows (init_env.ps1) och Linux/macOS (init_env.sh).**
-
-**Vad som är implementerat och fungerar:**
-*   **Backend API (`/config/upload/`)**: Tar emot filuppladdningar och sparar filinformation i databasen med status `PENDING`.
-*   **Asynkron bearbetning**: Meddelanden publiceras till RabbitMQ för att initiera skanningsjobb.
-*   **Worker & Skanning**: En worker konsumerar jobb från kön, uppdaterar status till `SCANNING` och skannar filen med ClamAV.
-*   **Databasintegration**: Filens status (`CLEAN`, `INFECTED`, `ERROR`) uppdateras kontinuerligt i PostgreSQL.
-*   **🛡️ Karantänfunktion**: Infekterade filer flyttas automatiskt till en skyddad `/quarantine`-katalog och sökvägen i databasen uppdateras.
-*   **Status-endpoint (`/config/files/`)**: Ett API som visar status för alla uppladdade filer.
-*   **Frontend**: Ett grundläggande React-gränssnitt för att ladda upp filer och se deras status.
-*   **Adminpanel**: En nyligen tillagd adminpanel med följande funktioner:
-    *   **Dashboard**: En översiktsvy för systemstatus.
-    *   **Log Viewer**: Visar applikationsloggar.
-    *   **Quarantine Manager**: Hanterar filer i karantän (frigivning eller radering).
-*   **Robusthet**: Inbyggd `retry`-logik för anslutningar till RabbitMQ, ClamAV och PostgreSQL.
+**Implemented Features:**
+*   **File Handling:** Users can upload files, which are then processed asynchronously. The system correctly identifies clean and infected files, moving the latter to a secure quarantine.
+*   **Real-time UI:** The frontend provides real-time status updates for files being scanned.
+*   **Admin Panel:** A fully functional admin panel allows for:
+    *   **Dashboard:** System status overview.
+    *   **Log Viewer:** Real-time application logs.
+    *   **Quarantine Management:** Release or delete quarantined files.
+    *   **Configuration:** Toggle features like Maintenance Mode and RBAC/SSO, and manage HTTPS certificates.
+*   **Global Banners:** The UI displays global, non-intrusive banners to indicate the status of Maintenance Mode or if SSO is disabled.
+*   **Modern UI/UX:** The interface is responsive, features a dark mode, and provides a consistent user experience.
 
 ---
 
-## ⚙️ Adminpanel – Nuvarande läge
+## 🗺️ Project Roadmap
 
-> **Notera:** Adminpanelens "⚙️ Configuration"-sektion är nu fullt funktionell. Administratörer kan ändra systeminställningar direkt via UI:t, inklusive att slå på/av SSO/RBAC (RBAC_SSO_ENABLED), redigera SSO/AD-inställningar (med inline-validering), och toggla Maintenance Mode. Alla ändringar valideras direkt i gränssnittet, panelen har full dark mode-stöd och robust felhantering. Vid aktiverad RBAC/SSO krävs admin-behörighet (JWT-token) för att ändra kritiska inställningar.
+The following features are planned for future implementation:
+*   Full integration with Active Directory for SSO/RBAC.
+*   Generation and download of detailed scan reports.
+*   Enhanced user and group management within the admin panel.
 
-### Globala status-banderoller
-En ny funktion har implementerats för att visa globala status-banderoller överst i applikationen. Dessa banderoller är alltid synliga när respektive läge är aktivt och säkerställer att administratörer och användare är medvetna om systemets status.
+---
 
-- **Maintenance Mode-banderoll**: Visas när systemet är i underhållsläge.
-- **RBAC/SSO-banderoll**: Visas när `RBAC_SSO_ENABLED` är satt till `false`, för att varna om att applikationen körs i ett öppet, osäkrat läge.
+## ⚖️ Core Development Principles
 
-## 🗺️ Projekt-Roadmap (Resterande Vision)
+All development in this project must adhere to the following principles:
 
-Följande funktioner från den ursprungliga arkitekturen återstår att implementera:
-
-1.  **Implementera Backend för Konfiguration:**
-    *   Endpoints för att hantera `maintenance mode`, `SSO/RBAC`, och `HTTPS`-certifikat.
-    *   Logik för att ladda upp företagslogotyp.
-2.  **Säkerhet och Autentisering:**
-    *   Implementera JWT-autentisering.
-    *   Full integration mot Active Directory för SSO och RBAC.
-3.  **Checksum:**
-    *   Implementera en checksum check funktion.
-4.  **Drift och Övervakning:**
-    *   Sätta upp CI/CD-pipelines (t.ex. GitHub Actions).
-    *   Etablera central logghantering (t.ex. Elastic Stack).
+1.  **Stability First:** No change should ever break existing functionality.
+2.  **Modularity:** Write reusable, well-documented, and modular code. Avoid hard-coding and duplication.
+3.  **Robustness:** Implement solid error handling for all operations (API calls, file handling, etc.).
+4.  **Follow UI Design:** Adhere to the modern and consistent design language defined in the project.
+5.  **"Devuser" for Development:** When `RBAC_SSO_ENABLED=false`, the backend automatically uses a "devuser" with full admin privileges for all operations. No `Authorization` headers should be sent in this mode.
+6.  **Document Significant Changes:** Ensure that relevant documentation is updated when you implement a major change.

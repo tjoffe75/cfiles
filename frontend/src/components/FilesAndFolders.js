@@ -1,6 +1,6 @@
 import React from 'react';
 
-const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const apiUrl = process.env.REACT_APP_API_URL || '';
 
 const FilesAndFolders = ({ folders, files, error }) => {
   // Filer som inte tillhör någon mapp

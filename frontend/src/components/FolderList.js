@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const apiUrl = process.env.REACT_APP_API_URL || '';
 
 const FolderList = () => {
   const [folders, setFolders] = useState([]);
@@ -15,6 +15,16 @@ const FolderList = () => {
       .then(setFolders)
       .catch(e => setError(e.message));
   }, []);
+
+  const handleDelete = (folderId, event) => {
+    event.stopPropagation(); // Prevent onFolderClick from being called
+    onFolderDelete(folderId);
+  };
+
+  const handleShare = (folderId, event) => {
+    event.stopPropagation();
+    onFolderShare(folderId);
+  };
 
   if (error) return <div className="error-message">Fel: {error}</div>;
 

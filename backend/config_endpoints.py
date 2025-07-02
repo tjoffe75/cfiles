@@ -3,20 +3,28 @@ import shutil
 import pika
 from datetime import datetime
 from typing import List
-import asyncio
-from datetime import datetime, timedelta
+from pydantic import BaseModel
+from functools import wraps
+import inspect
 
 from fastapi import APIRouter, Depends, HTTPException, WebSocket, WebSocketDisconnect, UploadFile, File, Form, Security, status, Body
+from fastapi.responses import FileResponse as FastAPIFileResponse
 from sqlalchemy.orm import Session
 from database.database import get_db
 from database import models
 from enums import ScanStatus
-from schemas import File as FileResponse, FileUpdate, ScanStatusUpdate, FileUploadResponse, SystemSetting, SystemSettingUpdate
+from schemas import File as FileSchema, FileUpdate, ScanStatusUpdate, FileUploadResponse, SystemSetting, SystemSettingUpdate
 import logging
 import json
 from sqlalchemy.exc import IntegrityError
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt as pyjwt
+
+router = APIRouter()
+
+class CertUpload(BaseModel):
+    cert_file: UploadFile = File(...)
+    key_file: UploadFile = File(...)
 
 # Add a logger for this module
 logger = logging.getLogger(__name__)
@@ -88,6 +96,35 @@ class ConnectionManager:
                 logger.error(f"Error sending message to {connection.client}: {e}")
                 self.disconnect(connection)
 
+# --- HTTPS Certificate Management ---
+CERTS_DIR = "certs"
+
+@router.post("/config/https/upload-certs", dependencies=[Depends(get_current_user(role="admin"))])
+async def upload_certs(cert_file: UploadFile = File(...), key_file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Laddar upp och sparar SSL-certifikat och nyckelfiler."""
+    
+    os.makedirs(CERTS_DIR, exist_ok=True)
+
+    cert_path = os.path.join(CERTS_DIR, "cert.pem")
+    key_path = os.path.join(CERTS_DIR, "key.key")
+
+    try:
+        with open(cert_path, "wb") as f_cert:
+            shutil.copyfileobj(cert_file.file, f_cert)
+        
+        with open(key_path, "wb") as f_key:
+            shutil.copyfileobj(key_file.file, f_key)
+
+        # Uppdatera sökvägarna i databasen
+        db.query(models.SystemSetting).filter(models.SystemSetting.key == "HTTPS_CERT_PATH").update({"value": cert_path})
+        db.query(models.SystemSetting).filter(models.SystemSetting.key == "HTTPS_KEY_PATH").update({"value": key_path})
+        db.commit()
+
+        return {"message": "Certifikat och nyckel har laddats upp.", "cert_path": cert_path, "key_path": key_path}
+    except Exception as e:
+        logger.error(f"Kunde inte spara certifikat: {e}")
+        raise HTTPException(status_code=500, detail=f"Kunde inte spara certifikat: {e}")
+
 manager = ConnectionManager()
 status_manager = ConnectionManager() # Manager for status updates
 
@@ -95,8 +132,8 @@ status_manager = ConnectionManager() # Manager for status updates
 file_status_cache = {}
 
 # --- Maintenance Mode Check Decorator ---
-from functools import wraps
-import inspect
+# from functools import wraps # Redan importerad
+# import inspect # Redan importerad
 
 # --- Maintenance Mode and Endpoint Control ---
 
@@ -130,9 +167,7 @@ def require_not_maintenance_mode(endpoint_func):
             return endpoint_func(*args, db=db, **kwargs)
     return async_wrapper
 
-router = APIRouter()
-
-UPLOAD_DIR = "/uploads"
+UPLOAD_DIR = "uploads"
 
 @router.post("/upload/", response_model=FileUploadResponse)
 @require_not_maintenance_mode
@@ -248,13 +283,13 @@ async def websocket_status_endpoint(websocket: WebSocket):
         status_manager.disconnect(websocket)
 
 
-@router.get("/files/", response_model=List[FileResponse])
+@router.get("/files/", response_model=List[FileSchema])
 @require_not_maintenance_mode
 def get_files(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     files = db.query(models.File).order_by(models.File.upload_date.desc()).offset(skip).limit(limit).all()
     return files
 
-@router.get("/files/{file_id}", response_model=FileResponse)
+@router.get("/files/{file_id}", response_model=FileSchema)
 @require_not_maintenance_mode
 async def get_file(file_id: int, db: Session = Depends(get_db)):
     file = db.query(models.File).filter(models.File.id == file_id).first()
@@ -272,7 +307,7 @@ async def download_file(file_id: int, db: Session = Depends(get_db)):
     if db_file.scan_status != ScanStatus.CLEAN:
         raise HTTPException(status_code=403, detail=f"File cannot be downloaded. Status: {db_file.scan_status}")
 
-    return FileResponse(db_file.filepath, media_type="application/octet-stream", filename=db_file.filename)
+    return FastAPIFileResponse(db_file.filepath, media_type="application/octet-stream", filename=db_file.filename)
 
 @router.post("/config/logo")
 async def upload_logo(file: UploadFile = File(...)):

@@ -65,6 +65,9 @@ def init_system_settings():
         {"key": "AD_CLIENT_SECRET", "value": "", "description": "AD/SSO client secret"},
         {"key": "AD_GROUP_USERS", "value": "users", "description": "AD group for normal users"},
         {"key": "AD_GROUP_ADMINS", "value": "admins", "description": "AD group for admins"},
+        {"key": "HTTPS_ENABLED", "value": "false", "description": "Enable HTTPS with custom certificates (true/false)"},
+        {"key": "HTTPS_CERT_PATH", "value": "/certs/cert.pem", "description": "Path to the SSL certificate file"},
+        {"key": "HTTPS_KEY_PATH", "value": "/certs/key.key", "description": "Path to the SSL private key file"},
         # Lägg till fler nycklar här vid behov
     ]
     db = SessionLocal()

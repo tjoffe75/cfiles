@@ -1,75 +1,66 @@
 import React, { useState, useEffect } from 'react';
+import LogViewer from './LogViewer';
+import Quarantine from './Quarantine';
+import ConfigPanel from './ConfigPanel';
 
 const AdminPanel = () => {
-  const [logs, setLogs] = useState([]);
-  const [quarantinedFiles, setQuarantinedFiles] = useState([]);
+    const [logs, setLogs] = useState([]);
+    const [quarantinedFiles, setQuarantinedFiles] = useState([]);
 
-  useEffect(() => {
-    fetchLogs();
-    fetchQuarantinedFiles();
-  }, []);
-
-  const fetchLogs = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/logs/realtime');
-      const data = await response.json();
-      setLogs(data.logs);
-    } catch (error) {
-      console.error('Error fetching logs:', error);
-    }
-  };
-
-  const fetchQuarantinedFiles = async () => {
-    try {
-      const response = await fetch('http://localhost:8000/quarantine/files');
-      const data = await response.json();
-      setQuarantinedFiles(data.quarantined_files);
-    } catch (error) {
-      console.error('Error fetching quarantined files:', error);
-    }
-  };
-
-  const handleReleaseFile = async (fileId) => {
-    try {
-      const response = await fetch(`http://localhost:8000/quarantine/files/${fileId}`, {
-        method: 'DELETE',
-      });
-      if (response.ok) {
-        alert('File released successfully!');
+    useEffect(() => {
+        // Fetch initial data
+        fetchLogs();
         fetchQuarantinedFiles();
-      } else {
-        alert('Failed to release file.');
-      }
-    } catch (error) {
-      console.error('Error releasing file:', error);
-    }
-  };
+    }, []);
 
-  return (
-    <div>
-      <h2>Admin Panel</h2>
+    const fetchLogs = async () => {
+        try {
+            const response = await fetch('/api/logs/realtime');
+            const data = await response.json();
+            setLogs(data);
+        } catch (error) {
+            console.error('Error fetching logs:', error);
+        }
+    };
 
-      <section>
-        <h3>Logs</h3>
-        <ul>
-          {logs.map((log, index) => (
-            <li key={index}>{log}</li>
-          ))}
-        </ul>
-      </section>
+    const fetchQuarantinedFiles = async () => {
+        try {
+            const response = await fetch('/api/quarantine/files');
+            const data = await response.json();
+            setQuarantinedFiles(data);
+        } catch (error) {
+            console.error('Error fetching quarantined files:', error);
+        }
+    };
 
-      <section>
-        <h3>Quarantined Files</h3>
-        <ul>
-          {quarantinedFiles.map((file, index) => (
-            <li key={index}>
-              {file} <button onClick={() => handleReleaseFile(file)}>Release</button>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
-  );
+    const handleAction = async (fileId, action) => {
+        try {
+            const response = await fetch(`/api/quarantine/files/${fileId}`,
+            {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action })
+            });
+            if (response.ok) {
+                fetchQuarantinedFiles(); // Refresh the list
+            } else {
+                console.error('Error performing action on quarantined file');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+        }
+    };
+
+    return (
+        <div className="admin-panel">
+            <h2>Admin Panel</h2>
+            <LogViewer logs={logs} />
+            <Quarantine quarantinedFiles={quarantinedFiles} onAction={handleAction} />
+            <ConfigPanel />
+        </div>
+    );
 };
 
 export default AdminPanel;

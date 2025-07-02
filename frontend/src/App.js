@@ -28,8 +28,7 @@ function App() {
 
   const fetchFiles = async () => {
     try {
-      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-      const response = await fetch(`${apiUrl}/files/`);
+      const response = await fetch(`/api/files/`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -44,8 +43,7 @@ function App() {
   useEffect(() => {
     const fetchMaintenanceStatus = async () => {
         try {
-            const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            const response = await fetch(`${apiUrl}/config/maintenance-mode`);
+            const response = await fetch(`/api/config/maintenance-mode`);
             if (response.ok) {
                 const data = await response.json();
                 setIsMaintenanceMode(data.maintenance_mode);
@@ -57,8 +55,7 @@ function App() {
 
     const fetchSsoStatus = async () => {
       try {
-        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-        const response = await fetch(`${apiUrl}/config/sso-status`);
+        const response = await fetch(`/api/config/sso-status`);
         if (response.ok) {
           const data = await response.json();
           setIsSsoEnabled(data.sso_enabled);
@@ -87,7 +84,8 @@ function App() {
   useEffect(() => {
     fetchFiles(); // Initial fetch of all files
 
-    const wsUrl = process.env.REACT_APP_WS_URL || 'ws://localhost:8000/ws/status';
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = `${wsProtocol}//${window.location.host}/ws/status`;
     let retryCount = 0;
 
     const connect = () => {
@@ -136,8 +134,7 @@ function App() {
           // If it's a new file, we might not have all details (like filename)
           // A robust way is to re-fetch the full file info
           if (!prevFiles.some(f => f.id === messageData.file_id)) {
-            const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-            fetch(`${apiUrl}/files/`)
+            fetch(`/api/files/`)
               .then(res => res.json())
               .then(allFiles => setFiles(allFiles))
               .catch(err => console.error("Failed to re-fetch files after update:", err));

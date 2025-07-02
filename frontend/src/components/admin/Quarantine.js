@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Card from './Card';
 import './Quarantine.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = '/api/quarantine'; // Use relative path
 
 const Quarantine = () => {
     const [quarantinedFiles, setQuarantinedFiles] = useState([]);
@@ -12,7 +12,7 @@ const Quarantine = () => {
     const fetchQuarantinedFiles = async () => {
         setLoading(true);
         try {
-            const response = await fetch(`${API_URL}/quarantine/`);
+            const response = await fetch(`${API_URL}/`);
             if (!response.ok) {
                 throw new Error(`Network response was not ok: ${response.statusText}`);
             }
@@ -32,7 +32,7 @@ const Quarantine = () => {
 
     const handleAction = async (fileId, action) => {
         try {
-            const response = await fetch(`${API_URL}/quarantine/${fileId}/action`, {
+            const response = await fetch(`${API_URL}/${fileId}/action`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

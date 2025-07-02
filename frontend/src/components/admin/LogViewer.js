@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Card from './Card';
 import './LogViewer.css';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = '/api'; // Use relative path
 
 function LogViewer() {
   const [logs, setLogs] = useState([]);
@@ -12,7 +12,7 @@ function LogViewer() {
   const fetchLogs = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_URL}/logs/`);
+      const response = await fetch(`${API_URL}/logs`);
       if (!response.ok) {
         throw new Error(`Network response was not ok: ${response.statusText}`);
       }

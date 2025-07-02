@@ -3,8 +3,17 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+    labels:
+      - "traefik.enable=true"
+      # HTTP Router (for redirecting to HTTPS)
+      - "traefik.http.routers.frontend-http.rule=Host(`cfiles.localhost`) || Host(`localhost`)"
+      - "traefik.http.routers.frontend-http.middlewares=httpsredirect"
+
+      # HTTPS Router for Frontend
+      - "traefik.http.routers.frontend-https.rule=Host(`cfiles.localhost`) || Host(`localhost`)"
+      - "traefik.http.routers.frontend-https.entrypoints=websecure"
+      - "traefik.http.routers.frontend-https.tls=true"
+      - "traefik.http.services.frontend.loadbalancer.server.port=3000" # Define the service here
     volumes:
       - ./frontend:/app
       - /app/node_modules
@@ -17,8 +26,29 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    ports:
-      - "8000:8000"
+    labels:
+      - "traefik.enable=true"
+      # Service definition
+      - "traefik.http.services.backend.loadbalancer.server.port=8000"
+
+      # --- HTTPS Routers (HTTP is handled by global redirect) ---
+      # Backend API (HTTPS)
+      - "traefik.http.routers.backend-api-https.rule=(Host(`cfiles.localhost`) || Host(`localhost`)) && PathPrefix(`/api`)"
+
+      - "traefik.http.routers.backend-api-https.entrypoints=websecure"
+      - "traefik.http.routers.backend-api-https.tls=true"
+      - "traefik.http.routers.backend-api-https.middlewares=api-stripprefix"
+      - "traefik.http.routers.backend-api-https.service=backend"
+
+      # Backend WebSocket (HTTPS)
+      - "traefik.http.routers.backend-ws-https.rule=(Host(`cfiles.localhost`) || Host(`localhost`)) && PathPrefix(`/ws`)"
+
+      - "traefik.http.routers.backend-ws-https.entrypoints=websecure"
+      - "traefik.http.routers.backend-ws-https.tls=true"
+      - "traefik.http.routers.backend-ws-https.service=backend"
+
+      # --- Middlewares ---
+      - "traefik.http.middlewares.api-stripprefix.stripprefix.prefixes=/api"
     volumes:
       - ./backend:/app
       - ./testfiles:/files
@@ -94,9 +124,25 @@ services:
     networks:
       - cfiles-network
 
+  traefik:
+    image: traefik:v2.9
+    container_name: traefik-cfiles
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080" # Traefik Dashboard
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "./letsencrypt:/letsencrypt"
+      - "./traefik/traefik.yml:/etc/traefik/traefik.yml:ro"
+    networks:
+      - cfiles-network
+
 networks:
   cfiles-network:
     driver: bridge
 
 volumes:
   postgres-data:
+  letsencrypt:

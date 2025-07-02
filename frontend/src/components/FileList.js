@@ -49,7 +49,9 @@ const FileList = ({ files, error }) => {
               <td>
                 {file.scan_status === 'clean' && (
                   <a 
-                    href={`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/files/${file.id}/download`} 
+                    href={`${process.env.REACT_APP_API_URL || ''}/files/${file.id}/download`} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
                     className="download-btn"
                     download
                   >

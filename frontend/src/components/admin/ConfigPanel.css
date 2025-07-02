@@ -53,6 +53,38 @@
     gap: 1rem;
 }
 
+.config-control-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-start;
+}
+
+.config-control input[type="file"] {
+    /* We can hide the default input and style the label */
+    display: none;
+}
+
+.config-control .file-upload-label {
+    padding: 0.5rem 1rem;
+    background-color: #6c757d;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.config-control .file-upload-label:hover {
+    background-color: #5a6268;
+}
+
+.file-name {
+    font-size: 0.85rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
 .config-control input[type="text"] {
     padding: 0.5rem 0.75rem;
     border: 1px solid #ced4da;
