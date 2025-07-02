@@ -180,3 +180,18 @@ Applikationen är helt container-baserad och körs med Docker Compose. Detta sä
 ## Development
 
 This project includes a fully containerized development environment using Docker.
+
+### Miljövariabler
+Projektet konfigureras via en `.env`-fil i rotmappen. Följande variabler används:
+
+| Variabel             | Beskrivning                                                                                                | Exempelvärde            |
+| -------------------- | ---------------------------------------------------------------------------------------------------------- | ----------------------- |
+| `POSTGRES_USER`      | Användarnamn för PostgreSQL-databasen.                                                                     | `cfiles`                |
+| `POSTGRES_PASSWORD`  | Lösenord för PostgreSQL-databasen.                                                                         | `supersecretpassword`   |
+| `POSTGRES_DB`        | Namnet på PostgreSQL-databasen.                                                                            | `cfilesdb`              |
+| `RABBITMQ_DEFAULT_USER` | Användarnamn för RabbitMQ.                                                                                 | `user`                  |
+| `RABBITMQ_DEFAULT_PASS` | Lösenord för RabbitMQ.                                                                                     | `password`              |
+| `RABBITMQ_HOST`      | Värdnamnet för RabbitMQ-tjänsten, vanligtvis containernamnet.                                              | `rabbitmq`              |
+| `REACT_APP_API_URL`  | URL till backend-API:et för frontend.                                                                      | `http://localhost:8000` |
+| `REACT_APP_WS_URL`   | WebSocket-URL för statusuppdateringar.                                                                     | `ws://localhost:8000/ws/status` |
+| `RBAC_SSO_ENABLED`   | Styr om RBAC/SSO-autentisering är aktiv. Sätt till `false` för att köra i öppet utvecklingsläge.            | `true` / `false`        |

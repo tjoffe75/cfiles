@@ -93,16 +93,16 @@ function App() {
 
     const connect = () => {
       if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-        console.log("WebSocket is already connected.");
+        // WebSocket is already connected.
         return;
       }
 
-      console.log("Attempting to connect WebSocket...");
+      // console.log("Attempting to connect WebSocket...");
       setWsStatus('Connecting...');
       ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
-        console.log('WebSocket connected');
+        // console.log('WebSocket connected');
         setWsStatus('Connected');
         setError(null);
         retryCount = 0; // Reset retry count on successful connection
@@ -122,7 +122,7 @@ function App() {
           return;
         }
 
-        console.log('WebSocket message received:', messageData);
+        // console.log('WebSocket message received:', messageData);
         
         setFiles(prevFiles => {
           const filesMap = new Map(prevFiles.map(f => [f.id, f]));
@@ -155,14 +155,14 @@ function App() {
       };
 
       ws.current.onclose = (event) => {
-        console.log('WebSocket disconnected.');
+        // console.log('WebSocket disconnected.');
         setWsStatus('Disconnected. Reconnecting...');
         
         // Exponential backoff for reconnection
         const delay = Math.min(1000 * (2 ** retryCount), 30000); // Max 30 seconds
         retryCount++;
         
-        console.log(`Will attempt to reconnect in ${delay / 1000} seconds.`);
+        // console.log(`Will attempt to reconnect in ${delay / 1000} seconds.`);
         reconnectTimer.current = setTimeout(connect, delay);
       };
     };
@@ -171,7 +171,7 @@ function App() {
 
     // Cleanup function on component unmount
     return () => {
-      console.log("Cleaning up WebSocket connection.");
+      // console.log("Cleaning up WebSocket connection.");
       if (reconnectTimer.current) {
         clearTimeout(reconnectTimer.current);
       }
@@ -208,7 +208,7 @@ function App() {
   const handleUploadSuccess = (newFile) => {
     // No longer need to call fetchFiles(). 
     // The WebSocket message will handle adding the new file to the list.
-    console.log('Upload successful for:', newFile.filename);
+    // console.log('Upload successful for:', newFile.filename);
   };
 
   const transformStatusUpdate = (update) => {

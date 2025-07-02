@@ -88,6 +88,12 @@ Projektet har ett fungerande end-to-end-flöde för säker filuppladdning, asynk
 
 > **Notera:** Adminpanelens "⚙️ Configuration"-sektion är nu fullt funktionell. Administratörer kan ändra systeminställningar direkt via UI:t, inklusive att slå på/av SSO/RBAC (RBAC_SSO_ENABLED), redigera SSO/AD-inställningar (med inline-validering), och toggla Maintenance Mode. Alla ändringar valideras direkt i gränssnittet, panelen har full dark mode-stöd och robust felhantering. Vid aktiverad RBAC/SSO krävs admin-behörighet (JWT-token) för att ändra kritiska inställningar.
 
+### Globala status-banderoller
+En ny funktion har implementerats för att visa globala status-banderoller överst i applikationen. Dessa banderoller är alltid synliga när respektive läge är aktivt och säkerställer att administratörer och användare är medvetna om systemets status.
+
+- **Maintenance Mode-banderoll**: Visas när systemet är i underhållsläge.
+- **RBAC/SSO-banderoll**: Visas när `RBAC_SSO_ENABLED` är satt till `false`, för att varna om att applikationen körs i ett öppet, osäkrat läge.
+
 ## 🗺️ Projekt-Roadmap (Resterande Vision)
 
 Följande funktioner från den ursprungliga arkitekturen återstår att implementera:
