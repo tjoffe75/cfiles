@@ -1,139 +1,90 @@
 .config-panel {
-    padding: 2.5rem 2.5rem;
-    background: #fff;
-    border-radius: 16px;
-    max-width: unset;
-    width: 100%;
-    margin: 0;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    padding: 1rem;
 }
 
-@media (max-width: 900px) {
-  .config-panel {
-    padding: 1.2rem 0.5rem;
-    border-radius: 0;
-  }
-}
-
-.config-panel h2 {
-    font-size: 2.2rem;
-    margin-bottom: 1.5rem;
+.config-title {
+    font-size: 2rem;
     font-weight: 700;
-    color: #1a237e;
+    margin-bottom: 2rem;
 }
 
-.config-section {
-    margin-bottom: 2.5rem;
-    padding-bottom: 1.5rem;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.config-section:last-child {
-    border-bottom: none;
-}
-
-.config-section h3 {
-    font-size: 1.3rem;
-    color: #3949ab;
-    margin-bottom: 1rem;
-    font-weight: 600;
-}
-
+/* Config List within Cards */
 .config-list {
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
     gap: 1.5rem;
 }
 
 .config-item {
-    flex: 1 1 350px;
-    min-width: 320px;
-    margin-bottom: 0;
-    padding: 1.2rem 1.5rem;
-    border: 1px solid #bdbdbd;
-    border-radius: 8px;
-    background: #fff;
-    box-shadow: 0 2px 8px rgba(60,60,60,0.04);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.config-list .config-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+.config-list .config-item:first-child {
+    padding-top: 0;
+}
+
+.config-item-details {
     display: flex;
     flex-direction: column;
-    gap: 0.7rem;
+    gap: 0.25rem;
 }
 
 .config-item label {
-    font-weight: 600;
-    color: #263238;
-    margin-bottom: 0.2rem;
-}
-
-.config-item input[type="text"] {
-    padding: 0.5rem 0.7rem;
-    border: 1px solid #90caf9;
-    border-radius: 4px;
+    font-weight: 500;
     font-size: 1rem;
-    background: #f5faff;
-    transition: border 0.2s;
-}
-
-.config-item input[type="text"]:focus {
-    border: 1.5px solid #1976d2;
-    outline: none;
-}
-
-.save-button {
-    align-self: flex-end;
-    background: linear-gradient(90deg, #1976d2 0%, #64b5f6 100%);
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 0.5rem 1.2rem;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    margin-top: 0.5rem;
-    box-shadow: 0 2px 8px rgba(25,118,210,0.08);
-    transition: background 0.2s, box-shadow 0.2s;
-}
-.save-button:disabled {
-    background: #bdbdbd;
-    cursor: not-allowed;
 }
 
 .setting-description {
-    font-size: 0.95rem;
-    color: #607d8b;
-    margin-top: -0.2rem;
-    margin-bottom: 0.2rem;
+    font-size: 0.85rem;
+    color: #6c757d;
 }
 
-.dev-warning-banner {
-    background: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeeba;
-    border-radius: 6px;
-    padding: 1rem 1.5rem;
-    margin-bottom: 2rem;
-    font-size: 1.1rem;
+.config-control {
     display: flex;
     align-items: center;
-    gap: 0.7rem;
+    gap: 1rem;
 }
 
-.error-message {
-    color: #d32f2f;
-    background: #ffebee;
-    border: 1px solid #ffcdd2;
-    padding: 1rem;
+.config-control input[type="text"] {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #ced4da;
     border-radius: 6px;
-    margin-bottom: 1.5rem;
-    font-size: 1.1rem;
+    min-width: 250px;
 }
 
-/* The switch - https://www.w3schools.com/howto/howto_css_switch.asp */
+.save-button {
+    padding: 0.5rem 1.25rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.save-button:hover {
+    background-color: #0056b3;
+}
+
+.save-button:disabled {
+    background-color: #6c757d;
+    cursor: not-allowed;
+}
+
+/* Switch Toggle */
 .switch {
     position: relative;
     display: inline-block;
-    width: 60px;
-    height: 34px;
+    width: 50px;
+    height: 28px;
 }
 
 .switch input { 
@@ -150,37 +101,32 @@
     right: 0;
     bottom: 0;
     background-color: #ccc;
-    -webkit-transition: .4s;
     transition: .4s;
 }
 
 .slider:before {
     position: absolute;
     content: "";
-    height: 26px;
-    width: 26px;
+    height: 20px;
+    width: 20px;
     left: 4px;
     bottom: 4px;
     background-color: white;
-    -webkit-transition: .4s;
     transition: .4s;
 }
 
 input:checked + .slider {
-    background-color: #2196F3;
+    background-color: #28a745;
 }
 
 input:focus + .slider {
-    box-shadow: 0 0 1px #2196F3;
+    box-shadow: 0 0 1px #28a745;
 }
 
 input:checked + .slider:before {
-    -webkit-transform: translateX(26px);
-    -ms-transform: translateX(26px);
-    transform: translateX(26px);
+    transform: translateX(22px);
 }
 
-/* Rounded sliders */
 .slider.round {
     border-radius: 34px;
 }
@@ -189,51 +135,34 @@ input:checked + .slider:before {
     border-radius: 50%;
 }
 
-body.dark-mode .config-panel {
-    background: #23272f;
-    color: #e0e0e0;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.25);
+.switch-status {
+    font-weight: 500;
+    min-width: 30px;
 }
-body.dark-mode .config-section h3 {
-    color: #90caf9;
+
+/* Dark Mode */
+.dark-mode .config-item {
+    border-bottom-color: #374151;
 }
-body.dark-mode .config-panel h2 {
-    color: #90caf9;
+
+.dark-mode .setting-description {
+    color: #adb5bd;
 }
-body.dark-mode .config-item {
-    background: #23272f;
-    border: 1px solid #374151;
-    box-shadow: 0 2px 8px rgba(30,30,30,0.12);
+
+.dark-mode .config-control input[type="text"] {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #e5e7eb;
 }
-body.dark-mode .config-item label {
-    color: #e0e0e0;
+
+.dark-mode .save-button:disabled {
+    background-color: #4b5563;
 }
-body.dark-mode .config-item input[type="text"] {
-    background: #1a1d23;
-    color: #e0e0e0;
-    border: 1px solid #90caf9;
+
+.dark-mode .slider {
+    background-color: #4b5563;
 }
-body.dark-mode .config-item input[type="text"]:focus {
-    border: 1.5px solid #42a5f5;
-}
-body.dark-mode .save-button {
-    background: linear-gradient(90deg, #1565c0 0%, #42a5f5 100%);
-    color: #fff;
-}
-body.dark-mode .save-button:disabled {
-    background: #374151;
-    color: #bdbdbd;
-}
-body.dark-mode .setting-description {
-    color: #b0bec5;
-}
-body.dark-mode .dev-warning-banner {
-    background: #3e2723;
-    color: #ffe082;
-    border: 1px solid #ffb300;
-}
-body.dark-mode .error-message {
-    background: #2d1b1b;
-    color: #ff8a65;
-    border: 1px solid #ff7043;
+
+.dark-mode input:checked + .slider {
+    background-color: #20c997;
 }

@@ -157,13 +157,26 @@ hr {
 }
 
 .file-list th, .file-list td {
-  padding: 12px 15px;
+  padding: 16px 20px; /* Increased padding */
   text-align: left;
-  border-bottom: 1px solid #dddddd;
+  border-bottom: 1px solid #e5e7eb; /* Softer border color */
 }
 
 .file-list th {
-  background-color: #ecf0f1;
+  background-color: #f8f9fa; /* Lighter header */
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #495057;
+}
+
+.file-list tr {
+  transition: background-color 0.2s ease-in-out;
+}
+
+.file-list tr:hover {
+  background-color: #f1f3f5;
 }
 
 /* --- SSO Status Banner --- */
@@ -264,6 +277,11 @@ body.dark-mode {
 
 .dark-mode .file-list th {
   background-color: #2c3e50;
+  color: #adb5bd;
+}
+
+.dark-mode .file-list tr:hover {
+  background-color: #343a40;
 }
 
 .dark-mode .sso-banner {

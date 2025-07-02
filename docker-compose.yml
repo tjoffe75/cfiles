@@ -7,6 +7,7 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/app
+      - /app/node_modules
     networks:
       - cfiles-network
     depends_on:

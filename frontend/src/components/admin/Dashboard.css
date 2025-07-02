@@ -1,0 +1,43 @@
+.admin-dashboard {
+  padding: 1rem;
+}
+
+.dashboard-title {
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+.dashboard-subtitle {
+  font-size: 1.1rem;
+  color: #6c757d;
+  margin-bottom: 2.5rem;
+}
+
+.dashboard-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 2rem;
+}
+
+.kpi-metric {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0;
+}
+
+.status-ok {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #2ecc71; /* Green for OK status */
+  margin: 0;
+}
+
+/* Dark Mode Styles */
+.dark-mode .dashboard-subtitle {
+  color: #adb5bd;
+}
+
+.dark-mode .status-ok {
+  color: #48c774;
+}
