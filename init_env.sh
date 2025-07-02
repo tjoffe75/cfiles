@@ -11,8 +11,8 @@ if [ ! -f .env ]; then
   RABBIT_USER="user$(cat /proc/sys/kernel/random/uuid | tr -d '-' | head -c 8)"
   RABBIT_PASS="$(randstr)"
   WS_URL="ws://localhost:8000/ws/status"
-  PG_USER="filesapp"
-  PG_DB="filesappdb"
+  PG_USER="cfiles"
+  PG_DB="cfilesdb"
   PG_PASS="$(randstr)"
   cat > .env <<EOF
 RABBITMQ_DEFAULT_USER=$RABBIT_USER
@@ -27,9 +27,9 @@ EOF
 else
   # Ensure Postgres vars exist
   touch .env
-  grep -q '^POSTGRES_USER=' .env || echo 'POSTGRES_USER=filesapp' >> .env
+  grep -q '^POSTGRES_USER=' .env || echo 'POSTGRES_USER=cfiles' >> .env
   grep -q '^POSTGRES_PASSWORD=' .env || echo "POSTGRES_PASSWORD=$(randstr)" >> .env
-  grep -q '^POSTGRES_DB=' .env || echo 'POSTGRES_DB=filesappdb' >> .env
+  grep -q '^POSTGRES_DB=' .env || echo 'POSTGRES_DB=cfilesdb' >> .env
   echo ".env updated with missing Postgres variables if needed."
 fi
 

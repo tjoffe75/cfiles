@@ -6,6 +6,7 @@ const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
 const SSO_KEYS = [
     'RBAC_SSO_ENABLED',
+    'SHOW_CURRENT_USER_IN_ADMIN',
     'AD_ENDPOINT',
     'AD_CLIENT_ID',
     'AD_CLIENT_SECRET',
@@ -93,6 +94,9 @@ const ConfigPanel = () => {
     };
 
     const validateSetting = (setting, value) => {
+        const ssoEnabledSetting = settings.find(s => s.key === 'RBAC_SSO_ENABLED');
+        const ssoEnabled = ssoEnabledSetting && editValues[ssoEnabledSetting.id] === 'true';
+
         if (setting.key === 'AD_ENDPOINT' && ssoEnabled) {
             try {
                 if (!value) return 'Endpoint krävs när SSO är på.';
@@ -110,21 +114,21 @@ const ConfigPanel = () => {
         return '';
     };
 
-    if (loading) return <div>Loading configuration...</div>;
-    if (error) return <div className="error-message">{error}</div>;
-
-    // Gruppera inställningar
     const ssoSettings = settings.filter(s => SSO_KEYS.includes(s.key));
-    const otherSettings = settings.filter(s => !SSO_KEYS.includes(s.key));
+    const otherSettings = settings.filter(s => !SSO_KEYS.includes(s.key) && s.key !== 'MAINTENANCE_MODE');
+    const ssoEnabledSetting = settings.find(s => s.key === 'RBAC_SSO_ENABLED');
+    const ssoEnabled = ssoEnabledSetting && editValues[ssoEnabledSetting.id] === 'true';
 
-    // Hitta RBAC_SSO_ENABLED setting
-    const ssoEnabledSetting = ssoSettings.find(s => s.key === 'RBAC_SSO_ENABLED');
-    const ssoEnabled = ssoEnabledSetting ? editValues[ssoEnabledSetting.id] === 'true' : false;
+    if (loading) return <div>Loading configuration...</div>;
+    if (error) {
+        return <div>Error: {error}</div>;
+    }
 
     return (
         <div className="config-panel">
-            <h2>System Configuration</h2>
-            <div className="config-section">
+            <h2>Configuration</h2>
+            {error && <div className="error-message">{error}</div>}
+            <div className="maintenance-section">
                 <h3>Maintenance Mode</h3>
                 {maintenanceLoading ? (
                     <div>Loading maintenance mode...</div>
@@ -141,11 +145,6 @@ const ConfigPanel = () => {
                             <span className="slider round"></span>
                         </label>
                         <span style={{marginLeft:8}}>{maintenanceMode ? 'ON' : 'OFF'}</span>
-                        {maintenanceMode && (
-                            <div className="dev-warning-banner" style={{marginTop:8}}>
-                                <b>Maintenance Mode is ON:</b> The system is temporarily unavailable for uploads and normal use.
-                            </div>
-                        )}
                     </div>
                 )}
             </div>

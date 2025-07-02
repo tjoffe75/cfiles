@@ -16,6 +16,7 @@ class File(Base):
     scan_details = Column(String, nullable=True)
     is_quarantined = Column(Boolean, default=False, nullable=False)
     checksum = Column(String, nullable=True)
+    owner = Column(String, nullable=True, index=True)  # Nytt fält för användare/ägare
 
 class SystemSetting(Base):
     __tablename__ = "system_settings"

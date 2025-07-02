@@ -1,0 +1,29 @@
+.sso-status-banner {
+    background-color: #2c3e50; /* Dark blue-gray, fits with a dark theme */
+    color: #ecf0f1; /* Light gray text */
+    padding: 10px 15px;
+    text-align: center;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-bottom: 1px solid #34495e; /* Slightly darker border */
+    box-sizing: border-box; /* Ensures padding is included in the width */
+}
+
+.sso-status-banner.disabled {
+    background-color: #e74c3c; /* Red for warning */
+    color: white;
+    border-bottom: 1px solid #c0392b; /* Darker red border */
+}
+
+/* Light mode specific styles */
+body:not(.dark-mode) .sso-status-banner {
+    background-color: #bdc3c7; /* Light gray for light mode */
+    color: #2c3e50; /* Dark text */
+    border-bottom: 1px solid #95a5a6; /* Darker gray border */
+}
+
+body:not(.dark-mode) .sso-status-banner.disabled {
+    background-color: #e74c3c; /* Red warning remains the same */
+    color: white;
+    border-bottom: 1px solid #c0392b;
+}

@@ -6,6 +6,7 @@ from enums import ScanStatus
 class FileBase(BaseModel):
     filename: str
     filesize: int
+    owner: Optional[str] = None  # Nytt fält för användare
     
 class FileCreate(FileBase):
     pass

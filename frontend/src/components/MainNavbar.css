@@ -1,0 +1,78 @@
+.main-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  z-index: 201;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 56px;
+  background: #23272f;
+  color: #fff;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 2px 12px rgba(44,62,80,0.10);
+  padding: 0 32px;
+}
+.main-navbar-flex-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+  position: relative;
+  height: 100%;
+}
+.main-navbar-logo {
+  display: flex;
+  align-items: center;
+  height: 100%;
+  position: relative;
+  left: 0;
+  top: 0;
+  padding-left: 24px;
+  z-index: 2;
+}
+.app-logo {
+  height: 40px;
+  width: auto;
+  max-width: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 8px rgba(25, 118, 210, 0.08));
+}
+.app-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #90caf9;
+  margin-left: 12px;
+  letter-spacing: 1px;
+}
+.main-navbar-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.main-navbar-toggle {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  padding-right: 24px;
+}
+@media (max-width: 900px) {
+  .main-navbar {
+    padding-left: 0;
+    padding-right: 0;
+    height: 48px;
+  }
+  .main-navbar-logo {
+    padding-left: 8px;
+  }
+  .app-logo {
+    height: 28px;
+    max-width: 70px;
+  }
+  .main-navbar-toggle {
+    padding-right: 8px;
+  }
+}

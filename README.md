@@ -47,9 +47,7 @@ For a deep dive into the technical implementation, see [ARCHITECTURE.md](ARCHITE
 - Skripten sätter alltid `RABBITMQ_HOST=rabbitmq` i `.env` för Docker Compose-miljö (ingen manuell ändring krävs).
 - Du kan redigera `.env` och `frontend/.env` manuellt om du vill ändra några värden.
 
-**Installation & Running:**
-
-1.  **Clone the repository:**
+**Ins1.  **Clone the repository:**
     ```bash
     git clone <your-repo-url>
     cd cfiles
@@ -83,47 +81,31 @@ docker compose exec backend ls /quarantine
 
 ## 🔄 Rensa och starta om appen (från grunden)
 
-Följ dessa steg för att rensa miljön och starta om Filesapp på en ny, ren instans:
+För att helt återställa applikationen till ett rent tillstånd, använd reset-skripten. Dessa skript stoppar och tar bort Docker-containrar, raderar temporära data-mappar (`uploads`, `quarantine`, `testfiles`) och tar bort gamla `.env`-filer.
 
-1. **Stoppa alla tjänster**
-   - Stäng av backend, frontend och eventuella Docker-containrar (RabbitMQ, Postgres).
+- **Windows (PowerShell):**
+  ```powershell
+  ./reset_env.ps1
+  ```
+- **Linux/macOS (bash):**
+  ```bash
+  bash ./reset_env.sh
+  ```
 
-2. **Rensa gamla data och miljö**
-   - Ta bort mapparna: `uploads`, `quarantine`, `testfiles` (de skapas automatiskt vid backend-start).
-   - Ta bort eller flytta `.env` och `frontend/.env` om du vill ha nya credentials.
+Efter att ha kört reset-skriptet kan du starta om applikationen från grunden genom att följa stegen i [Getting Started](#2-getting-started).
 
-3. **Initiera miljövariabler**
-   - Kör init-scriptet:
-     - Windows: `./init_env.ps1`
-     - Linux/macOS: `bash ./init_env.sh`
-   - Detta skapar `.env` och `frontend/.env` med rätt RabbitMQ, Postgres och WebSocket-URL samt sätter `RABBITMQ_HOST=rabbitmq` för Docker Compose.
-
-4. **Starta tjänster**
-   - Starta RabbitMQ och Postgres (t.ex. via Docker Compose eller motsvarande).
-   - Starta backend (t.ex. med `uvicorn backend.main:app --reload`).
-     - Backend skapar automatiskt mappar och initierar systeminställningar i databasen.
-   - Starta frontend (i `frontend/`):
-     - `npm install` (vid behov)
-     - `npm start`
-
-5. **Testa funktionalitet**
-   - Öppna frontend på http://localhost:3000.
-   - Testa drag-and-drop och vanlig uppladdning.
-   - Kontrollera att dark mode, adminpanel och maintenance mode fungerar.
-   - Kontrollera att statusmeddelanden och eventuella felmeddelanden visas korrekt.
-
-> **Tips:** Du behöver inte manuellt skapa mappar eller systeminställningar – backend gör detta automatiskt.
+> **Viktigt:** Reset-skripten ger en komplett återställning. Använd dem när du vill säkerställa att ingen gammal data eller konfiguration finns kvar.
 
 ## 🛠️ Portabel och själviniterande applikation
 
-- Filesapp är nu helt portabel och kan startas på valfri dator (Windows, Linux, macOS) utan manuell konfiguration.
+- cfiles är nu helt portabel och kan startas på valfri dator (Windows, Linux, macOS) utan manuell konfiguration.
 - Init-script (`init_env.ps1` för Windows, `init_env.sh` för Linux/macOS) skapar automatiskt alla nödvändiga miljövariabler och .env-filer vid första uppstart.
 - Alla tjänster (backend, frontend, RabbitMQ, Postgres, ClamAV) startas och konfigureras automatiskt via Docker Compose.
 - Backend skapar automatiskt mappar och initierar systeminställningar i databasen vid start.
 - Ingen manuell redigering av miljövariabler krävs – allt sätts automatiskt och kan ändras i efterhand om så önskas.
 - Dokumentationen är uppdaterad med tydliga steg för att rensa och starta om appen från grunden.
 
-> **Resultat:** Filesapp är robust, modulär, lätt att flytta och starta om – och alltid enkel att sätta upp i nya miljöer.
+> **Resultat:** cfiles är robust, modulär, lätt att flytta och starta om – och alltid enkel att sätta upp i nya miljöer.
 
 ## 🐞 Felsökningsplan: RabbitMQ-anslutning och filuppladdning
 
@@ -162,3 +144,39 @@ Följ dessa steg för att rensa miljön och starta om Filesapp på en ny, ren in
 > **Mål:** Säkerställa robust och portabel RabbitMQ-anslutning för filuppladdning i alla miljöer.
 
 ---
+
+## Kör Projektet med Docker
+
+Applikationen är helt container-baserad och körs med Docker Compose. Detta säkerställer att alla tjänster (backend, frontend, worker, databas) startas med rätt konfiguration.
+
+1.  **Förbered Miljöfilen:**
+    Kör lämpligt skript för ditt operativsystem för att skapa en `.env`-fil med standardvärden. Denna fil innehåller alla nödvändiga miljövariabler.
+    -   **Windows (PowerShell):**
+        ```powershell
+        .\init_env.ps1
+        ```
+    -   **Linux/macOS (bash/zsh):**
+        ```bash
+        ./init_env.sh
+        ```
+
+2.  **Bygg och Starta Containers:**
+    Använd `docker-compose` för att bygga och starta alla tjänster i bakgrunden. Kommandot `--build` är viktigt eftersom det bygger om images om koden (t.ex. i `frontend` eller `backend`) har ändrats.
+
+    ```bash
+    docker-compose up -d --build
+    ```
+
+3.  **Applikationen är nu tillgänglig:**
+    -   **Frontend:** [http://localhost:3000](http://localhost:3000)
+    -   **Backend API:** [http://localhost:8000/docs](http://localhost:8000/docs)
+
+4.  **Stänga Ner:**
+    För att stoppa alla containers, kör:
+    ```bash
+    docker-compose down
+    ```
+
+## Development
+
+This project includes a fully containerized development environment using Docker.

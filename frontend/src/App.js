@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
 import DarkModeToggle from './components/DarkModeToggle';
@@ -8,8 +8,9 @@ import Dashboard from './components/admin/Dashboard';
 import LogViewer from './components/admin/LogViewer';
 import Quarantine from './components/admin/Quarantine';
 import ConfigPanel from './components/admin/ConfigPanel';
-import SSOBanner from './components/SSOBanner';
 import SideNav from './components/admin/SideNav';
+import SsoStatusBanner from './components/SsoStatusBanner'; // Corrected import
+import MaintenanceModeBanner from './components/MaintenanceModeBanner';
 import './App.css';
 
 function App() {
@@ -17,10 +18,14 @@ function App() {
   const [error, setError] = useState(null);
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [wsStatus, setWsStatus] = useState('Connecting...');
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(false);
+  const [isSsoEnabled, setIsSsoEnabled] = useState(true); // Centralized state for SSO
+  const [bannerHeight, setBannerHeight] = useState(0);
 
   // useRef to hold the WebSocket instance and timers to prevent re-renders from affecting them
   const ws = useRef(null);
   const reconnectTimer = useRef(null);
+  const bannersRef = useRef(null); // Ref for the banners container
 
   const fetchFiles = async () => {
     try {
@@ -36,6 +41,49 @@ function App() {
       console.error('Failed to fetch files:', error);
     }
   };
+
+  useEffect(() => {
+    const fetchMaintenanceStatus = async () => {
+        try {
+            const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+            const response = await fetch(`${apiUrl}/config/maintenance-mode`);
+            if (response.ok) {
+                const data = await response.json();
+                setIsMaintenanceMode(data.maintenance_mode);
+            }
+        } catch (error) {
+            console.error('Failed to fetch maintenance status:', error);
+        }
+    };
+
+    const fetchSsoStatus = async () => {
+      try {
+        const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+        const response = await fetch(`${apiUrl}/config/sso-status`);
+        if (response.ok) {
+          const data = await response.json();
+          setIsSsoEnabled(data.sso_enabled);
+        } else {
+          setIsSsoEnabled(false);
+        }
+      } catch (error) {
+        console.error('Failed to fetch SSO status:', error);
+        setIsSsoEnabled(false);
+      }
+    };
+
+    fetchMaintenanceStatus();
+    fetchSsoStatus();
+
+    // Poll for status updates every 5 seconds
+    const intervalId = setInterval(() => {
+        fetchMaintenanceStatus();
+        fetchSsoStatus();
+    }, 5000); // 5000 ms = 5 seconds
+
+    // Cleanup interval on component unmount
+    return () => clearInterval(intervalId);
+  }, []);
 
   useEffect(() => {
     fetchFiles(); // Initial fetch of all files
@@ -106,7 +154,7 @@ function App() {
         // onclose will be called next
       };
 
-      ws.current.onclose = () => {
+      ws.current.onclose = (event) => {
         console.log('WebSocket disconnected.');
         setWsStatus('Disconnected. Reconnecting...');
         
@@ -132,6 +180,20 @@ function App() {
       }
     };
   }, []); // Empty dependency array ensures this runs only once
+
+  // This effect observes the height of the banners container and updates the header accordingly
+  useEffect(() => {
+    const bannerElement = bannersRef.current;
+    if (!bannerElement) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      setBannerHeight(bannerElement.offsetHeight);
+    });
+
+    resizeObserver.observe(bannerElement);
+
+    return () => resizeObserver.disconnect(); // Clean up observer on unmount
+  }, []); // Runs once on mount
 
   useEffect(() => {
     if (isDarkMode) {
@@ -162,49 +224,46 @@ function App() {
     setIsDarkMode(!isDarkMode);
   };
 
+  const mainContent = (
+    <div className="main-content">
+      <Routes>
+        {/* Route for the main file upload/file list view */}
+        <Route path="/" element={
+          <div className="upload-area-container">
+            <FileUpload onUploadSuccess={handleUploadSuccess} />
+            <FileList files={files} error={error} />
+          </div>
+        } />
+
+        {/* Routes for the admin panel */}
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="logs" element={<LogViewer />} />
+          <Route path="quarantine" element={<Quarantine />} />
+          <Route path="config" element={<ConfigPanel />} />
+        </Route>
+      </Routes>
+    </div>
+  );
+
   return (
     <Router>
-      <SSOBanner />
-      <div className="app-with-sidenav">
-        <SideNav />
-        <div className="main-content-with-sidenav">
-          <nav className="main-navbar">
-            <div className="main-navbar-flex-row">
-              <div className="main-navbar-logo">
-                {/* Placeholder for logo upload, will be replaced by user-uploaded logo */}
-                <img src="/logo-placeholder.svg" alt="Logo" className="app-logo" />
-              </div>
-              <div className="main-navbar-center">
-                <span className="app-title" style={{fontSize: '2.5rem', fontWeight: 900, letterSpacing: '2px', color: '#1976d2', textTransform: 'uppercase'}}>
-                  cfiles
-                </span>
-              </div>
-              <div className="main-navbar-toggle">
-                <DarkModeToggle onChange={toggleDarkMode} isDarkMode={isDarkMode} />
-              </div>
-            </div>
-          </nav>
-          <div className={isDarkMode ? "App dark-mode" : "App"}>
-            <div className="header-container">
-            </div>
-            <main>
-              <Routes>
-                <Route path="/" element={
-                  <>
-                    <FileUpload onUploadSuccess={handleUploadSuccess} />
-                    <hr />
-                    <FileList files={files} error={error} />
-                  </>
-                } />
-                <Route path="/admin" element={<AdminLayout />}>
-                  <Route path="dashboard" element={<Dashboard />} />
-                  <Route path="quarantine" element={<Quarantine />} />
-                  <Route path="logs" element={<LogViewer />} />
-                  <Route path="config" element={<ConfigPanel />} />
-                </Route>
-              </Routes>
-            </main>
+      <div className={`app-container ${isDarkMode ? 'dark-mode' : ''}`}>
+        <div className="app-banners" ref={bannersRef}>
+          <SsoStatusBanner isEnabled={isSsoEnabled} />
+          {isMaintenanceMode && <MaintenanceModeBanner isActive={isMaintenanceMode} />}
+        </div>
+        <header className="app-header" style={{ top: bannerHeight }}>
+          <div className="logo-title">
+            <img src="/logo-placeholder.svg" alt="Logo" className="logo" />
+            <h1 className="app-title">cfiles</h1>
           </div>
+          <DarkModeToggle onChange={toggleDarkMode} isDarkMode={isDarkMode} />
+        </header>
+        <div className="app-content">
+          <SideNav />
+          {mainContent}
         </div>
       </div>
     </Router>

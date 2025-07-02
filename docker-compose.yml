@@ -8,7 +8,7 @@ services:
     volumes:
       - ./frontend:/app
     networks:
-      - filesapp-network
+      - cfiles-network
     depends_on:
       - backend
 
@@ -24,7 +24,7 @@ services:
       - ./uploads:/uploads
       - ./quarantine:/quarantine
     networks:
-      - filesapp-network
+      - cfiles-network
     depends_on:
       - rabbitmq
       - clamav
@@ -37,7 +37,7 @@ services:
       context: .
       dockerfile: ./workers/Dockerfile
     networks:
-      - filesapp-network
+      - cfiles-network
     depends_on:
       - rabbitmq
       - postgres
@@ -57,7 +57,7 @@ services:
       - "5672:5672"
       - "15672:15672"
     networks:
-      - filesapp-network
+      - cfiles-network
 
   postgres:
     image: postgres:latest
@@ -73,7 +73,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - filesapp-network
+      - cfiles-network
 
   clamav:
     image: clamav/clamav:latest
@@ -91,10 +91,10 @@ services:
       - ./uploads:/uploads
       - ./quarantine:/quarantine
     networks:
-      - filesapp-network
+      - cfiles-network
 
 networks:
-  filesapp-network:
+  cfiles-network:
     driver: bridge
 
 volumes:

@@ -21,7 +21,7 @@ import jwt as pyjwt
 # Add a logger for this module
 logger = logging.getLogger(__name__)
 
-security = HTTPBearer()
+security = HTTPBearer(auto_error=False)
 
 # Dummy public key för JWT-validering (ersätt med riktig i produktion)
 DUMMY_PUBLIC_KEY = "your-public-key"
@@ -31,10 +31,12 @@ DUMMY_PUBLIC_KEY = "your-public-key"
 def get_current_user(role: str = "user"):
     def dependency(credentials: HTTPAuthorizationCredentials = Security(security), db: Session = Depends(get_db)):
         sso_config = get_sso_rbac_config(db)
-        if not sso_config["enabled"]:
+        if not sso_config.get("enabled", False):
             # Dev-läge: tillåt alla, returnera dummy-user
             return {"username": "devuser", "roles": ["admin", "user"], "dev_mode": True}
         # SSO/RBAC på: kontrollera JWT och grupp
+        if not credentials:
+            raise HTTPException(status_code=401, detail="Not authenticated")
         try:
             payload = pyjwt.decode(credentials.credentials, DUMMY_PUBLIC_KEY, algorithms=["RS256"], options={"verify_signature": False})
             username = payload.get("preferred_username") or payload.get("sub")
@@ -96,12 +98,32 @@ file_status_cache = {}
 from functools import wraps
 import inspect
 
+# --- Maintenance Mode and Endpoint Control ---
+
+# List of routes that should be accessible even in maintenance mode.
+# Use the function name of the endpoint.
+MAINTENANCE_MODE_WHITELIST = [
+    "get_maintenance_mode",
+    "set_maintenance_mode",
+    "get_sso_status",
+    "root",
+    "websocket_status_endpoint",
+]
+
 def require_not_maintenance_mode(endpoint_func):
     @wraps(endpoint_func)
     async def async_wrapper(*args, db: Session = Depends(get_db), **kwargs):
+        # Allow whitelisted endpoints to bypass maintenance mode check
+        if endpoint_func.__name__ in MAINTENANCE_MODE_WHITELIST:
+            if inspect.iscoroutinefunction(endpoint_func):
+                return await endpoint_func(*args, db=db, **kwargs)
+            else:
+                return endpoint_func(*args, db=db, **kwargs)
+
         setting = db.query(models.SystemSetting).filter_by(key="MAINTENANCE_MODE").first()
         if setting and setting.value == "true":
             raise HTTPException(status_code=503, detail="System is in maintenance mode.")
+        
         if inspect.iscoroutinefunction(endpoint_func):
             return await endpoint_func(*args, db=db, **kwargs)
         else:
@@ -114,7 +136,7 @@ UPLOAD_DIR = "/uploads"
 
 @router.post("/upload/", response_model=FileUploadResponse)
 @require_not_maintenance_mode
-async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db), user=Depends(get_current_user())):
     if not os.path.exists(UPLOAD_DIR):
         os.makedirs(UPLOAD_DIR)
 
@@ -142,16 +164,17 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
         db_file.upload_date = datetime.utcnow() # Update timestamp
         db_file.filesize = file_size
         db_file.is_quarantined = False # Reset quarantine status
+        db_file.owner = user["username"] if user else None
     else:
         # If file doesn't exist, create a new database record
         db_file = models.File(
             filename=file.filename, 
             filepath=file_path, 
             filesize=file_size,
-            scan_status=models.ScanStatus.PENDING
+            scan_status=models.ScanStatus.PENDING,
+            owner=user["username"] if user else None
         )
         db.add(db_file)
-    
     db.commit()
     db.refresh(db_file)
 
@@ -185,31 +208,43 @@ async def upload_file(file: UploadFile = File(...), db: Session = Depends(get_db
 
 @router.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
+    logger.info(f"WebSocket /ws: Försöker acceptera anslutning från {websocket.client}")
     try:
+        await manager.connect(websocket)
+        logger.info(f"WebSocket /ws: Anslutning accepterad från {websocket.client}")
         while True:
-            # Keep the connection alive
             await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        logging.info("Client disconnected from /ws.")
+        logger.info("Client disconnected from /ws.")
+    except Exception as e:
+        logger.error(f"WebSocket /ws error: {e}")
+        try:
+            await websocket.close(code=1011, reason=str(e))
+        except Exception:
+            pass
+        manager.disconnect(websocket)
 
 @router.websocket("/ws/status")
 async def websocket_status_endpoint(websocket: WebSocket):
-    await status_manager.connect(websocket)
+    logger.info(f"WebSocket /ws/status: Försöker acceptera anslutning från {websocket.client}")
     try:
+        await status_manager.connect(websocket)
+        logger.info(f"WebSocket /ws/status: Anslutning accepterad från {websocket.client}")
         while True:
-            # Wait for messages from the client (e.g., pong responses)
             data = await websocket.receive_text()
             logger.debug(f"Received message from {websocket.client}: {data}")
             if data == '{"type":"pong"}':
                 status_manager.update_last_pong(websocket)
-
     except WebSocketDisconnect:
         status_manager.disconnect(websocket)
         logger.info(f"Client {websocket.client} disconnected from status endpoint.")
     except Exception as e:
         logger.error(f"An error occurred in the status websocket for {websocket.client}: {e}")
+        try:
+            await websocket.close(code=1011, reason=str(e))
+        except Exception:
+            pass
         status_manager.disconnect(websocket)
 
 
@@ -330,6 +365,26 @@ def set_maintenance_mode(
     setting.value = "true" if enabled else "false"
     db.commit()
     return {"maintenance_mode": setting.value == "true"}
+
+@router.get("/config/sso-settings")
+def get_sso_settings(db: Session = Depends(get_db)):
+    setting = db.query(models.SystemSetting).filter_by(key="SHOW_CURRENT_USER_IN_ADMIN").first()
+    show_current_user = setting.value == "true" if setting else False
+    # Frontend expects uppercase key
+    return {"SHOW_CURRENT_USER_IN_ADMIN": show_current_user}
+
+@router.get("/current-user")
+def get_current_user_info(user=Depends(get_current_user())):
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    
+    is_sso = not user.get("dev_mode", False)
+
+    return {
+        "username": user.get("username"),
+        "roles": user.get("roles"),
+        "is_sso": is_sso
+    }
 
 # Utility: Hämta SSO/RBAC-status och config
 
