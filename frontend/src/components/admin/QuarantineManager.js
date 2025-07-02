@@ -26,13 +26,11 @@ function QuarantineManager() {
 
   const handleRelease = (fileId) => {
     // Placeholder for release logic
-    console.log(`Releasing file ${fileId}`);
     alert(`File ${fileId} released.`);
   };
 
   const handleDelete = (fileId) => {
     // Placeholder for delete logic
-    console.log(`Deleting file ${fileId}`);
     alert(`File ${fileId} deleted.`);
   };
 
