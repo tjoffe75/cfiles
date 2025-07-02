@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom'; // Import Link
 import FileUpload from './components/FileUpload';
 import FileList from './components/FileList';
 import DarkModeToggle from './components/DarkModeToggle';
@@ -8,7 +8,6 @@ import Dashboard from './components/admin/Dashboard';
 import LogViewer from './components/admin/LogViewer';
 import Quarantine from './components/admin/Quarantine';
 import ConfigPanel from './components/admin/ConfigPanel';
-import SideNav from './components/admin/SideNav';
 import SsoStatusBanner from './components/SsoStatusBanner'; // Corrected import
 import MaintenanceModeBanner from './components/MaintenanceModeBanner';
 import './App.css';
@@ -255,14 +254,18 @@ function App() {
           {isMaintenanceMode && <MaintenanceModeBanner isActive={isMaintenanceMode} />}
         </div>
         <header className="app-header" style={{ top: bannerHeight }}>
-          <div className="logo-title">
+          <div className="header-left">
             <img src="/logo-placeholder.svg" alt="Logo" className="logo" />
+          </div>
+          <div className="header-center">
             <h1 className="app-title">cfiles</h1>
           </div>
-          <DarkModeToggle onChange={toggleDarkMode} isDarkMode={isDarkMode} />
+          <div className="header-right">
+            <Link to="/admin" className="admin-link">Admin</Link>
+            <DarkModeToggle onChange={toggleDarkMode} isDarkMode={isDarkMode} />
+          </div>
         </header>
         <div className="app-content">
-          <SideNav />
           {mainContent}
         </div>
       </div>
