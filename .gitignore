@@ -55,3 +55,4 @@ htmlcov/
 *.old
 *.swp
 *.swo
+uploads/Win64OpenSSL-3_5_1.msi
