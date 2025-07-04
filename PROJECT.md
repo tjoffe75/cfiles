@@ -54,7 +54,7 @@ Applikationens primära syfte är att erbjuda en robust och säker plattform fö
 
 ---
 
-## ✅ Nuvarande Status (Juli 2025)
+## ✅ Nuvarande status (Juli 2025)
 
 - All grundläggande funktionalitet är klar: filuppladdning, scanning, statusuppdatering och karantän fungerar stabilt.
 - Nedladdning av filer är implementerat och testat.
@@ -76,10 +76,7 @@ Projektet har ett fungerande end-to-end-flöde för säker filuppladdning, asynk
 *   **🛡️ Karantänfunktion**: Infekterade filer flyttas automatiskt till en skyddad `/quarantine`-katalog och sökvägen i databasen uppdateras.
 *   **Status-endpoint (`/config/files/`)**: Ett API som visar status för alla uppladdade filer.
 *   **Frontend**: Ett grundläggande React-gränssnitt för att ladda upp filer och se deras status.
-*   **Adminpanel**: En nyligen tillagd adminpanel med följande funktioner:
-    *   **Dashboard**: En översiktsvy för systemstatus.
-    *   **Log Viewer**: Visar applikationsloggar.
-    *   **Quarantine Manager**: Hanterar filer i karantän (frigivning eller radering).
+*   **Adminpanel**: En adminpanel där administratörer kan ändra systeminställningar, slå på/av SSO/RBAC, toggla Maintenance Mode, hantera loggar och karantän. Statusbanderoller för SSO och Maintenance Mode visas alltid.
 *   **Robusthet**: Inbyggd `retry`-logik för anslutningar till RabbitMQ, ClamAV och PostgreSQL.
 
 ---
@@ -109,3 +106,14 @@ Följande funktioner från den ursprungliga arkitekturen återstår att implemen
 4.  **Drift och Övervakning:**
     *   Sätta upp CI/CD-pipelines (t.ex. GitHub Actions).
     *   Etablera central logghantering (t.ex. Elastic Stack).
+
+## 🤝 Hur bidrar man?
+
+- Skapa alltid en feature-bransch från main.
+- Följ riktlinjer i COPILOT_GUIDELINES.md och PROJECT.md.
+- Gör en pull request (PR) mot main när din feature är klar och testad.
+- Beskriv ändringar tydligt i PR och uppdatera dokumentation vid behov.
+
+## Proxy (Reverse Proxy)
+
+> Reverse proxy (Traefik/Nginx) används inte i nuvarande arkitektur, men är planerat som ett framtida utvecklingsområde. När proxy införs kommer den vara utbytbar och scriptstyrd enligt projektets riktlinjer. Se ARCHITECTURE.md för detaljer.

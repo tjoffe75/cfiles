@@ -41,3 +41,23 @@ Följ dessa principer strikt:
 - **Använd "devuser":** När `RBAC_SSO_ENABLED=false`, förlita dig på att backend använder "devuser" för alla anrop. Skicka inga `Authorization`-headers i detta läge.
 - **Inga manuella installationer:** Använd inte `npm install` eller `pip install` direkt. Om beroenden behöver läggas till, uppdatera `package.json` eller `requirements.txt` och låt de befintliga byggskripten hantera installationen.
 - **Dokumentera ändringar:** Om du gör en betydande ändring, se till att relevant dokumentation (`README.md`, etc.) uppdateras.
+
+## Exempel på commit-meddelanden
+
+- feat: Lägg till stöd för scriptstyrd proxy-växling
+- fix: Åtgärda CORS-problem i Nginx-konfiguration
+- docs: Uppdatera README med Quick Start
+- refactor: Dela upp worker-logik i mindre funktioner
+
+## Vanliga misstag att undvika
+
+- Kör aldrig `npm install` eller `pip install` manuellt – använd alltid projektets script och Docker.
+- Byt proxy endast via script när proxy är implementerad (gäller framtida utveckling).
+- Proxy (Traefik/Nginx) används inte i nuvarande arkitektur – se ARCHITECTURE.md och PROJECT.md för status.
+- SSO/RBAC och Maintenance Mode är fullt implementerat och styrs via adminpanelen och miljövariabler. Statusbanderoller visas alltid i UI.
+- Glöm inte att uppdatera dokumentation vid större ändringar.
+- Skapa aldrig feature-bransch direkt från en annan feature-bransch – utgå alltid från main.
+
+## Dokumentationskrav
+
+- Vid större ändringar ska alltid README.md, PROJECT.md och/eller ARCHITECTURE.md uppdateras så att de speglar aktuell funktionalitet och arbetsflöde.

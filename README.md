@@ -1,9 +1,21 @@
 # cfiles - Secure File Upload & Scan
 
-A robust application for secure file uploads, where each file is automatically sent to a separate process for virus scanning. Built with a scalable microservice architecture.
+## 🚀 Quick Start
 
-For a detailed project overview, see [PROJECT.md](PROJECT.md).
-For a deep dive into the technical implementation, see [ARCHITECTURE.md](ARCHITECTURE.md).
+1. **Klona repot:**
+   ```bash
+   git clone <your-repo-url>
+   cd cfiles
+   ```
+2. **Initiera miljön:**
+   - Windows: `./init_env.ps1`
+   - Linux/macOS: `bash init_env.sh`
+3. **Starta alla tjänster:**
+   ```bash
+   docker compose up -d --build
+   ```
+
+> Se även [COPILOT_GUIDELINES.md](COPILOT_GUIDELINES.md) för arbetsflöde och kodningsregler.
 
 ---
 
@@ -78,6 +90,12 @@ docker compose exec backend ls /quarantine
 ## ⚙️ Adminpanel – Nuvarande läge
 
 > **Notera:** Adminpanelens "⚙️ Configuration"-sektion är nu fullt funktionell. Administratörer kan ändra systeminställningar direkt via UI:t, inklusive att slå på/av SSO/RBAC (RBAC_SSO_ENABLED), redigera SSO/AD-inställningar (med inline-validering), och toggla Maintenance Mode. Alla ändringar valideras direkt i gränssnittet, panelen har full dark mode-stöd och robust felhantering. Vid aktiverad RBAC/SSO krävs admin-behörighet (JWT-token) för att ändra kritiska inställningar.
+
+### Globala status-banderoller
+En funktion visar globala status-banderoller överst i applikationen. Dessa banderoller är alltid synliga när respektive läge är aktivt och säkerställer att administratörer och användare är medvetna om systemets status.
+
+- **Maintenance Mode-banderoll**: Visas när systemet är i underhållsläge.
+- **RBAC/SSO-banderoll**: Visas när `RBAC_SSO_ENABLED` är satt till `false`, för att varna om att applikationen körs i ett öppet, osäkrat läge.
 
 ## 🔄 Rensa och starta om appen (från grunden)
 
@@ -195,3 +213,7 @@ Projektet konfigureras via en `.env`-fil i rotmappen. Följande variabler använ
 | `REACT_APP_API_URL`  | URL till backend-API:et för frontend.                                                                      | `http://localhost:8000` |
 | `REACT_APP_WS_URL`   | WebSocket-URL för statusuppdateringar.                                                                     | `ws://localhost:8000/ws/status` |
 | `RBAC_SSO_ENABLED`   | Styr om RBAC/SSO-autentisering är aktiv. Sätt till `false` för att köra i öppet utvecklingsläge.            | `true` / `false`        |
+
+## Proxy (Traefik/Nginx)
+
+> Reverse proxy används inte i nuvarande arkitektur, men är planerat som ett framtida utvecklingsområde. När proxy införs kommer den vara utbytbar (Traefik/Nginx) och scriptstyrd enligt projektets riktlinjer. Se ARCHITECTURE.md och PROJECT.md för status.
